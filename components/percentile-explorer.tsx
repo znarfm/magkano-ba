@@ -27,14 +27,13 @@ import {
 } from "recharts"
 
 interface PercentileExplorerProps {
-  stats: PercentileStats
+  stats?: PercentileStats
   bySeniority: Record<SeniorityBand, PercentileStats>
   cpiAdjusted: boolean
   takeHomeParity: boolean
 }
 
 export function PercentileExplorer({
-  stats,
   bySeniority,
   cpiAdjusted,
   takeHomeParity,

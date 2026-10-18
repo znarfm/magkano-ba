@@ -8,11 +8,9 @@ import {
 import { getCpiMultiplier } from "../lib/config/psa-cpi"
 import {
   computeEmployeeStatutory,
-  computeContractorStatutory,
   computeTrainAnnualTax,
   computeContractorAnnualTax,
   calculateNetArbitrage,
-  computeCompensationView,
 } from "../lib/economics"
 import { computePercentiles, queryDashboardSlice } from "../lib/analytics"
 import { buildGroundedAuditPrompt } from "../lib/auditor"

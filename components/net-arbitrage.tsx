@@ -43,7 +43,7 @@ export function NetArbitrageSimulator() {
   const [localGross, setLocalGross] = useState<number>(60000)
   const [guaranteedMonths, setGuaranteedMonths] = useState<number>(13)
   const [allowance, setAllowance] = useState<number>(2000)
-  const [hmoAnnual, setHmoAnnual] = useState<number>(24000)
+  const hmoAnnual = 24000
 
   const result = calculateNetArbitrage(
     localGross || 0,
@@ -169,13 +169,10 @@ export function NetArbitrageSimulator() {
           <div className="text-right text-xs">
             <div className="font-mono text-muted-foreground">
               Net Take-Home:{" "}
-              <strong>
-                {formatPhp(result.localMonthlyNetEquivalent)}/mo
-              </strong>
+              <strong>{formatPhp(result.localMonthlyNetEquivalent)}/mo</strong>
             </div>
             <div className="font-mono text-[11px] text-muted-foreground">
-              Annual Benefits & Bonuses:{" "}
-              {formatPhp(result.benefitsAnnualLocal)}
+              Annual Benefits & Bonuses: {formatPhp(result.benefitsAnnualLocal)}
             </div>
           </div>
         </div>
@@ -221,10 +218,8 @@ export function NetArbitrageSimulator() {
                   width={110}
                 />
                 <Tooltip
-                  formatter={(val: any) =>
-                    typeof val === "number"
-                      ? formatPhp(val)
-                      : String(val ?? 0)
+                  formatter={(val: unknown) =>
+                    typeof val === "number" ? formatPhp(val) : String(val ?? 0)
                   }
                   contentStyle={{
                     backgroundColor: "var(--card)",

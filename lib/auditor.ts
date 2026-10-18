@@ -44,12 +44,12 @@ Format your response with clear headings:
   const userPrompt = `Evaluate this job offer/profile using ONLY these verified Filipino dataset benchmarks:
 
 USER PROFILE:
-- Target Role: ${profile.role}
-- Experience: ${profile.yoe} YOE
-- Offered / Current Monthly Gross: ₱${profile.monthlyOfferPhp.toLocaleString()}
-- Work Scope: ${profile.workScope}
-- School: ${profile.school || "Not specified"}
-- Macro Industry: ${profile.macroIndustry}
+- Target Role: ${validProfile.role}
+- Experience: ${validProfile.yoe} YOE
+- Offered / Current Monthly Gross: ₱${validProfile.monthlyOfferPhp.toLocaleString()}
+- Work Scope: ${validProfile.workScope}
+- School: ${validProfile.school || "Not specified"}
+- Macro Industry: ${validProfile.macroIndustry}
 
 VERIFIED COHORT BENCHMARKS (2026 CPI-Adjusted):
 - P25 (Entry Floor): ₱${percentiles.p25.toLocaleString()}/mo

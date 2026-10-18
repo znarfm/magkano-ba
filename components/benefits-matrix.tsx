@@ -207,9 +207,7 @@ export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
                       </Badge>
                     </td>
                     <td className="px-3 py-2.5 text-right font-medium">
-                      {row.allowancePhp > 0
-                        ? formatPhp(row.allowancePhp)
-                        : "—"}
+                      {row.allowancePhp > 0 ? formatPhp(row.allowancePhp) : "—"}
                     </td>
                     <td className="px-3 py-2.5 text-center">
                       {row.leaveDays} days

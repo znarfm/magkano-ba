@@ -1,28 +1,49 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from "react"
 
-export function useLocalStorage<T>(key: string, initialValue: T): [T, (val: T | ((prev: T) => T)) => void] {
-  const [value, setValue] = useState<T>(initialValue);
+function subscribe(callback: () => void) {
+  if (typeof window === "undefined") return () => {}
+  window.addEventListener("storage", callback)
+  return () => window.removeEventListener("storage", callback)
+}
 
-  useEffect(() => {
+export function useLocalStorage<T>(
+  key: string,
+  initialValue: T
+): [T, (val: T | ((prev: T) => T)) => void] {
+  const getSnapshot = useCallback(() => {
     try {
-      const item = localStorage.getItem(key);
-      if (item) setValue(JSON.parse(item));
+      return localStorage.getItem(key)
     } catch {
-      // ignore SSR/parse errors
+      return null
     }
-  }, [key]);
+  }, [key])
 
-  const setStoredValue = (val: T | ((prev: T) => T)) => {
-    setValue((prev) => {
-      const next = typeof val === 'function' ? (val as (prev: T) => T)(prev) : val;
+  const getServerSnapshot = useCallback(() => null, [])
+
+  const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+
+  const value = useMemo<T>(() => {
+    if (raw === null) return initialValue
+    try {
+      return JSON.parse(raw) as T
+    } catch {
+      return initialValue
+    }
+  }, [raw, initialValue])
+
+  const setStoredValue = useCallback(
+    (val: T | ((prev: T) => T)) => {
       try {
-        localStorage.setItem(key, JSON.stringify(next));
+        const next =
+          typeof val === "function" ? (val as (prev: T) => T)(value) : val
+        localStorage.setItem(key, JSON.stringify(next))
+        window.dispatchEvent(new Event("storage"))
       } catch {
         // quota exceeded or private mode
       }
-      return next;
-    });
-  };
+    },
+    [key, value]
+  )
 
-  return [value, setStoredValue];
+  return [value, setStoredValue]
 }

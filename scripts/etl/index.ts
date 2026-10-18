@@ -611,7 +611,7 @@ export function runETL() {
       if (!row || row.length < 5) continue
 
       const [
-        timestamp,
+        ,
         rawYear,
         rawIndustry,
         rawRole,
@@ -694,7 +694,7 @@ export function runETL() {
       if (!row || row.length < 2) continue
 
       const [
-        timestamp,
+        ,
         rawOccupation,
         rawSalary,
         rawMonthlyBenefits,

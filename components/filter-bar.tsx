@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { IconSearch, IconAdjustmentsHorizontal } from "@tabler/icons-react"
+import { IconSearch } from "@tabler/icons-react"
 
 interface FilterBarProps {
   filter: FilterState
@@ -66,12 +66,19 @@ export function FilterBar({
   filteredCount,
 }: FilterBarProps) {
   const [searchInput, setSearchInput] = React.useState(filter.searchQuery || "")
-  const filterRef = React.useRef(filter)
-  filterRef.current = filter
+  const [prevSearchQuery, setPrevSearchQuery] = React.useState(
+    filter.searchQuery
+  )
 
-  React.useEffect(() => {
+  if (filter.searchQuery !== prevSearchQuery) {
+    setPrevSearchQuery(filter.searchQuery)
     setSearchInput(filter.searchQuery || "")
-  }, [filter.searchQuery])
+  }
+
+  const filterRef = React.useRef(filter)
+  React.useEffect(() => {
+    filterRef.current = filter
+  })
 
   React.useEffect(() => {
     const timer = setTimeout(() => {

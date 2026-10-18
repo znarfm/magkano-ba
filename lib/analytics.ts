@@ -9,7 +9,6 @@ import {
   SeniorityBandSchema,
   SchoolTierGroup,
   SchoolTierGroupSchema,
-  WorkScope,
 } from "./types"
 
 export interface DashboardAnalytics {
