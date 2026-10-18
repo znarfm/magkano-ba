@@ -10,6 +10,7 @@ import { FilterBar } from "@/components/filter-bar"
 import { PercentileExplorer } from "@/components/percentile-explorer"
 import { NegotiationLift } from "@/components/negotiation-lift"
 import { MethodologyModal } from "@/components/methodology-modal"
+import { AppIcon } from "@/components/icons/app-icon"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -107,7 +108,7 @@ export default function DashboardPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2.5">
-              <span className="text-xl">🇵🇭</span>
+              <AppIcon className="h-7 w-7 shrink-0 rounded-lg shadow-xs" />
               <h1 className="text-xl font-bold tracking-tight">Magkano Ba?</h1>
               <Badge
                 variant="outline"

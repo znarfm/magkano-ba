@@ -27,6 +27,9 @@ export const metadata: Metadata = {
   title: "Magkano Ba? | Filipino Career & Compensation Dashboard",
   description:
     "Community-grounded Philippine salary and career intelligence dashboard.",
+  icons: {
+    icon: "/icon.svg",
+  },
 }
 
 export default function RootLayout({
