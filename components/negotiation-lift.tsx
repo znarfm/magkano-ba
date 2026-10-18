@@ -13,6 +13,7 @@ import {
   CardContent,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { formatPhp, formatPhpK } from "@/lib/utils"
 import {
   ResponsiveContainer,
   BarChart,
@@ -97,9 +98,7 @@ export function NegotiationLift({ lift }: NegotiationLiftProps) {
                     fontSize={10}
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={(val: number) =>
-                      `₱${(val / 1000).toFixed(0)}k`
-                    }
+                    tickFormatter={formatPhpK}
                   />
                   <Tooltip
                     content={({ active, payload }) => {
@@ -111,7 +110,7 @@ export function NegotiationLift({ lift }: NegotiationLiftProps) {
                             {pt.category}
                           </div>
                           <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                            ₱{pt.median.toLocaleString()}/mo
+                            {formatPhp(pt.median)}/mo
                           </div>
                           <div className="font-mono text-[10px] text-muted-foreground">
                             Sample Size: n = {pt.count}
@@ -135,12 +134,12 @@ export function NegotiationLift({ lift }: NegotiationLiftProps) {
                   Expected Monthly Premium:
                 </span>
                 <span className="font-mono text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
-                  +₱{Math.max(0, lift.liftPhp).toLocaleString()}
+                  +{formatPhp(Math.max(0, lift.liftPhp))}
                 </span>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                ≈ +₱{(Math.max(0, lift.liftPhp) * 13).toLocaleString()}/year
-                annualized with 13th month.
+                ≈ +{formatPhp(Math.max(0, lift.liftPhp) * 13)}/year annualized
+                with 13th month.
               </p>
             </div>
           </>

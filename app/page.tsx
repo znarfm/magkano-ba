@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react"
 import { z } from "zod"
 import { CareerRecord, CareerRecordSchema, FilterState } from "@/lib/types"
+import { useLocalStorage } from "@/hooks/use-local-storage"
 import { queryDashboardSlice } from "@/lib/analytics"
 import { FilterBar } from "@/components/filter-bar"
 import { PercentileExplorer } from "@/components/percentile-explorer"
@@ -27,7 +28,7 @@ export default function DashboardPage() {
   const [records, setRecords] = useState<CareerRecord[]>([])
   const [loading, setLoading] = useState<boolean>(true)
 
-  const [filter, setFilter] = useState<FilterState>({
+  const [filter, setFilter] = useLocalStorage<FilterState>("mb_filters", {
     macroIndustry: "ALL",
     roleFamily: "ALL",
     seniorityBand: "ALL",
@@ -214,8 +215,24 @@ export default function DashboardPage() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
           <p>
             Data sourced from community responses in the{" "}
-            <em>Liyab First Pay Survey</em> and{" "}
-            <em>Work/Career Path Information Sheet</em>.
+            <a
+              href="https://docs.google.com/spreadsheets/d/1gnA91Tjr_3UCNV8x1_LoE0oC56r-pXXRdJcgTfOLlm0/edit?usp=sharing"
+              target="_blank"
+              rel="noreferrer"
+              className="text-foreground underline underline-offset-2 hover:text-primary"
+            >
+              Liyab First Pay Survey
+            </a>{" "}
+            and{" "}
+            <a
+              href="https://docs.google.com/spreadsheets/d/14RExibfpaRE0-81jjLvm374_BihMpq7zjUyFKwAqetU/edit?usp=sharing"
+              target="_blank"
+              rel="noreferrer"
+              className="text-foreground underline underline-offset-2 hover:text-primary"
+            >
+              Work/Career Path Information Sheet
+            </a>
+            .
           </p>
           <div className="flex items-center gap-4">
             <MethodologyModal />

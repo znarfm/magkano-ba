@@ -48,19 +48,29 @@ export function MethodologyModal() {
               Datasets originate from crowdsourced Philippine compensation
               records:
             </p>
-            <ul className="list-disc space-y-1 pl-4">
+            <ul className="list-disc space-y-1.5 pl-4">
               <li>
-                <strong className="text-foreground">
-                  Liyab First Pay Survey:
-                </strong>{" "}
-                ~3,000 entry-level responses detailing initial salaries,
+                <a
+                  href="https://docs.google.com/spreadsheets/d/1gnA91Tjr_3UCNV8x1_LoE0oC56r-pXXRdJcgTfOLlm0/edit?usp=sharing"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-foreground underline underline-offset-2 hover:text-primary"
+                >
+                  Liyab First Pay Survey ↗
+                </a>
+                : ~3,000 entry-level responses detailing initial salaries,
                 universities, and offer negotiation outcomes.
               </li>
               <li>
-                <strong className="text-foreground">
-                  Work/Career Path Info Sheet:
-                </strong>{" "}
-                ~1,000 submissions detailing guaranteed bonus months
+                <a
+                  href="https://docs.google.com/spreadsheets/d/14RExibfpaRE0-81jjLvm374_BihMpq7zjUyFKwAqetU/edit?usp=sharing"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-foreground underline underline-offset-2 hover:text-primary"
+                >
+                  Work/Career Path Info Sheet ↗
+                </a>
+                : ~1,000 submissions detailing guaranteed bonus months
                 (13th–16th), allowances, leaves, and mentor advice quotes.
               </li>
             </ul>

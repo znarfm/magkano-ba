@@ -131,36 +131,19 @@ export function prepareNegotiationChartData(lift: {
 export function prepareStackedArbitrageData(
   arb: ArbitrageComparison
 ): StackedArbitragePoint[] {
-  // Approximate monthly component portions
-  const localTaxMonthly = Math.max(0, arb.taxDifferenceAnnual / 12)
-  const localStatMonthly = Math.max(0, arb.statutoryDifferenceAnnual / 12)
-  const localBenefitsMonthly = Math.max(0, arb.benefitsAnnualLocal / 12)
-
   return [
     {
       name: "PH Local Corporate",
       netTakeHome: arb.localMonthlyNetEquivalent,
-      tax: Math.round(localTaxMonthly),
-      statutory: Math.round(localStatMonthly),
-      benefits: Math.round(localBenefitsMonthly),
+      tax: arb.localMonthlyTax,
+      statutory: arb.localMonthlyStatutory,
+      benefits: Math.round(arb.benefitsAnnualLocal / 12),
     },
     {
       name: "Foreign Remote (8% Tax)",
       netTakeHome: arb.remoteMonthlyNetEquivalent,
-      tax: Math.round(
-        Math.max(
-          0,
-          ((arb.remoteBreakEvenMonthlyGross * 12 - 250000) * 0.08) / 12
-        )
-      ),
-      statutory: Math.round(
-        Math.max(
-          0,
-          (arb.remoteBreakEvenMonthlyGross * 12 -
-            arb.remoteMonthlyNetEquivalent * 12) /
-            12
-        )
-      ),
+      tax: arb.remoteMonthlyTax,
+      statutory: arb.remoteMonthlyStatutory,
       benefits: 0,
     },
   ]

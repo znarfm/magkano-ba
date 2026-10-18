@@ -2,7 +2,8 @@
 
 import React from "react"
 import { CareerRecord } from "@/lib/types"
-import { getCpiMultiplier } from "@/lib/config/psa-cpi"
+import { computeCompensationView } from "@/lib/economics"
+import { formatPhp } from "@/lib/utils"
 import {
   Card,
   CardHeader,
@@ -13,8 +14,21 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { IconQuote, IconSchool, IconBriefcase } from "@tabler/icons-react"
 
+export type MentorQuoteItem = Pick<
+  CareerRecord,
+  | "id"
+  | "rawTitle"
+  | "yoeYears"
+  | "schoolCanonical"
+  | "nominalMonthlyGrossPhp"
+  | "cohortYear"
+  | "workScope"
+  | "benefits"
+  | "mentorAdviceQuote"
+>
+
 interface MentorQuotesFeedProps {
-  quotes: CareerRecord[]
+  quotes: MentorQuoteItem[]
   cpiAdjusted: boolean
 }
 
@@ -48,10 +62,10 @@ export function MentorQuotesFeed({
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {quotes.map((q) => {
-              const rawSalary = q.nominalMonthlyGrossPhp.median
-              const displaySalary = cpiAdjusted
-                ? Math.round(rawSalary * getCpiMultiplier(q.cohortYear))
-                : rawSalary
+              const displaySalary = computeCompensationView(q, {
+                cpiAdjusted,
+                takeHomeParity: false,
+              })
 
               return (
                 <div
@@ -81,7 +95,7 @@ export function MentorQuotesFeed({
                       )}
                       {displaySalary > 0 && (
                         <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                          ₱{displaySalary.toLocaleString()}/mo
+                          {formatPhp(displaySalary)}/mo
                         </span>
                       )}
                     </div>

@@ -8,21 +8,15 @@ export interface StatutoryContributions {
   total: number
 }
 
-export interface CompensationSummary {
-  nominalMonthlyGross: number
-  adjustedMonthlyGross2026: number
-  monthlyNetEquivalent: number
-  annualNetTakeHome: number
-  monthlyTax: number
-  monthlyStatutory: number
-  annualBonus: number
-}
-
 export interface ArbitrageComparison {
   localMonthlyGross: number
   localMonthlyNetEquivalent: number
   remoteBreakEvenMonthlyGross: number
   remoteMonthlyNetEquivalent: number
+  localMonthlyTax: number
+  localMonthlyStatutory: number
+  remoteMonthlyTax: number
+  remoteMonthlyStatutory: number
   taxDifferenceAnnual: number
   statutoryDifferenceAnnual: number
   benefitsAnnualLocal: number
@@ -236,6 +230,10 @@ export function calculateNetArbitrage(
     localMonthlyNetEquivalent: Math.round(localMonthlyNetEquivalent),
     remoteBreakEvenMonthlyGross: remoteBreakEvenGross,
     remoteMonthlyNetEquivalent: Math.round(remoteNetEquivalent),
+    localMonthlyTax: Math.round(localAnnualTax / 12),
+    localMonthlyStatutory: Math.round(localStat.total),
+    remoteMonthlyTax: Math.round(remoteTax / 12),
+    remoteMonthlyStatutory: Math.round(remoteStat / 12),
     taxDifferenceAnnual: Math.round(localAnnualTax - remoteTax),
     statutoryDifferenceAnnual: Math.round(localStat.total * 12 - remoteStat),
     benefitsAnnualLocal: Math.round(

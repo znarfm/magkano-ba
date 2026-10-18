@@ -66,6 +66,8 @@ export function FilterBar({
   filteredCount,
 }: FilterBarProps) {
   const [searchInput, setSearchInput] = React.useState(filter.searchQuery || "")
+  const filterRef = React.useRef(filter)
+  filterRef.current = filter
 
   React.useEffect(() => {
     setSearchInput(filter.searchQuery || "")
@@ -73,12 +75,12 @@ export function FilterBar({
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      if (searchInput !== (filter.searchQuery || "")) {
-        onChange({ ...filter, searchQuery: searchInput })
+      if (searchInput !== (filterRef.current.searchQuery || "")) {
+        onChange({ ...filterRef.current, searchQuery: searchInput })
       }
     }, 150)
     return () => clearTimeout(timer)
-  }, [searchInput, filter, onChange])
+  }, [searchInput, onChange])
 
   const toggleScope = (scope: WorkScope) => {
     const exists = filter.workScopes.includes(scope)
@@ -108,6 +110,7 @@ export function FilterBar({
 
           <div className="w-48 sm:w-56">
             <Select
+              items={INDUSTRIES}
               value={filter.macroIndustry || "ALL"}
               onValueChange={(val) =>
                 onChange({
@@ -135,6 +138,7 @@ export function FilterBar({
 
           <div className="w-44 sm:w-52">
             <Select
+              items={SENIORITIES}
               value={filter.seniorityBand || "ALL"}
               onValueChange={(val) =>
                 onChange({

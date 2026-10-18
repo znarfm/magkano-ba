@@ -6,8 +6,6 @@ import {
 } from "./types"
 import { ArbitrageComparison } from "./economics"
 
-export type { AuditProfile }
-
 export interface GroundedPromptPayload {
   systemPrompt: string
   userPrompt: string
@@ -39,7 +37,7 @@ Format your response with clear headings:
     .slice(0, 5)
     .map(
       (q, idx) =>
-        `[Peer Quote ${idx + 1}] Role: ${q.rawTitle} (${q.yoeYears} YOE) | School: ${q.schoolCanonical ?? "N/A"}\n"${q.mentorAdviceQuote}"`
+        `[Peer Quote ${idx + 1}] Role: ${q.rawTitle} (${q.yoeYears} YOE) | School: ${q.schoolCanonical ?? "N/A"}\n"${q.mentorAdviceQuote ?? "No comment provided."}"`
     )
     .join("\n\n")
 

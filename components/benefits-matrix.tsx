@@ -14,6 +14,7 @@ import {
   CardContent,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { formatPhp, formatPhpK } from "@/lib/utils"
 import {
   ResponsiveContainer,
   BarChart,
@@ -124,9 +125,7 @@ export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
                   fontSize={10}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val: number) =>
-                    `₱${(val / 1000).toFixed(0)}k`
-                  }
+                  tickFormatter={formatPhpK}
                 />
                 <Tooltip
                   content={({ active, payload }) => {
@@ -143,7 +142,7 @@ export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
                         <div className="font-mono font-medium text-blue-600 dark:text-blue-400">
                           Allowance:{" "}
                           {pt.allowancePhp > 0
-                            ? `₱${pt.allowancePhp.toLocaleString()}/mo`
+                            ? `${formatPhp(pt.allowancePhp)}/mo`
                             : "None"}
                         </div>
                         <div className="font-mono text-[10px] text-muted-foreground">
@@ -209,7 +208,7 @@ export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
                     </td>
                     <td className="px-3 py-2.5 text-right font-medium">
                       {row.allowancePhp > 0
-                        ? `₱${row.allowancePhp.toLocaleString()}`
+                        ? formatPhp(row.allowancePhp)
                         : "—"}
                     </td>
                     <td className="px-3 py-2.5 text-center">

@@ -777,23 +777,6 @@ export function runETL() {
   console.log(
     `✅ Success! Generated ${records.length} canonical records at: ${outPath}`
   )
-
-  // Summary statistics
-  const byIndustry: Record<string, number> = {}
-  const byScope: Record<string, number> = {}
-  const byBand: Record<string, number> = {}
-  for (const r of records) {
-    byIndustry[r.macroIndustry] = (byIndustry[r.macroIndustry] || 0) + 1
-    byScope[r.workScope] = (byScope[r.workScope] || 0) + 1
-    byBand[r.seniorityBand] = (byBand[r.seniorityBand] || 0) + 1
-  }
-
-  console.log("\nDistribution by Macro Industry:")
-  console.table(byIndustry)
-  console.log("\nDistribution by Work Scope:")
-  console.table(byScope)
-  console.log("\nDistribution by Seniority Band:")
-  console.table(byBand)
 }
 
 if ((import.meta as unknown as { main: boolean }).main) {

@@ -14,6 +14,7 @@ import {
   CardContent,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { formatPhp, formatPhpK } from "@/lib/utils"
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -134,7 +135,7 @@ export function PercentileExplorer({
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(val: number) => `₱${(val / 1000).toFixed(0)}k`}
+                tickFormatter={formatPhpK}
               />
               <Tooltip
                 content={({ active, payload }) => {
@@ -157,7 +158,7 @@ export function PercentileExplorer({
                             P25:
                           </span>
                           <div className="text-foreground">
-                            ₱{pt.p25.toLocaleString()}
+                            {formatPhp(pt.p25)}
                           </div>
                         </div>
                         <div>
@@ -165,7 +166,7 @@ export function PercentileExplorer({
                             Median:
                           </span>
                           <div className="font-bold text-foreground">
-                            ₱{pt.p50.toLocaleString()}
+                            {formatPhp(pt.p50)}
                           </div>
                         </div>
                         <div>
@@ -173,12 +174,12 @@ export function PercentileExplorer({
                             P75:
                           </span>
                           <div className="text-foreground">
-                            ₱{pt.p75.toLocaleString()}
+                            {formatPhp(pt.p75)}
                           </div>
                         </div>
                       </div>
                       <div className="border-t border-border/50 pt-1 font-mono text-[10px] text-muted-foreground">
-                        IQR Spread: ₱{pt.iqrSpread.toLocaleString()}
+                        IQR Spread: {formatPhp(pt.iqrSpread)}
                       </div>
                     </div>
                   )

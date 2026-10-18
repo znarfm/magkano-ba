@@ -14,6 +14,7 @@ import {
   CardContent,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { formatPhp, formatPhpK } from "@/lib/utils"
 import {
   ResponsiveContainer,
   BarChart,
@@ -82,9 +83,7 @@ export function SchoolConvergence({
                   fontSize={10}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val: number) =>
-                    `₱${(val / 1000).toFixed(0)}k`
-                  }
+                  tickFormatter={formatPhpK}
                 />
                 <YAxis
                   dataKey="label"
@@ -105,11 +104,11 @@ export function SchoolConvergence({
                           {pt.label}
                         </div>
                         <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                          Median: ₱{pt.median.toLocaleString()}/mo
+                          Median: {formatPhp(pt.median)}/mo
                         </div>
                         <div className="grid grid-cols-2 gap-2 font-mono text-[10px] text-muted-foreground">
-                          <span>P25: ₱{pt.p25.toLocaleString()}</span>
-                          <span>P75: ₱{pt.p75.toLocaleString()}</span>
+                          <span>P25: {formatPhp(pt.p25)}</span>
+                          <span>P75: {formatPhp(pt.p75)}</span>
                         </div>
                         <div className="border-t border-border/40 pt-1 font-mono text-[10px] text-muted-foreground">
                           Sample Size: n = {pt.count}

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import {
   PercentileStats,
   CareerRecord,
@@ -9,6 +9,8 @@ import {
 } from "@/lib/types"
 import { calculateNetArbitrage } from "@/lib/economics"
 import { buildGroundedAuditPrompt, callGeminiAudit } from "@/lib/auditor"
+import { useLocalStorage } from "@/hooks/use-local-storage"
+import { formatPhp } from "@/lib/utils"
 import {
   Card,
   CardHeader,
@@ -38,15 +40,21 @@ interface OfferAuditorProps {
   activeIndustry: MacroIndustry | "ALL"
 }
 
-const STORAGE_KEY = "ph_career_gemini_key"
+const WORK_SCOPES: { value: WorkScope; label: string }[] = [
+  { value: "PH_LOCAL", label: "PH Local Corporate" },
+  { value: "FOREIGN_REMOTE", label: "Foreign Remote Contractor" },
+  { value: "OVERSEAS_OFW", label: "Overseas (OFW)" },
+]
 
 export function OfferAuditor({
   currentStats,
   currentQuotes,
   activeIndustry,
 }: OfferAuditorProps) {
-  const [apiKey, setApiKey] = useState<string>("")
-  const [hasSavedKey, setHasSavedKey] = useState<boolean>(false)
+  const [apiKey, setApiKey] = useLocalStorage<string>(
+    "ph_career_gemini_key",
+    ""
+  )
   const [role, setRole] = useState<string>("Software Engineer")
   const [yoe, setYoe] = useState<number>(2)
   const [monthlyOffer, setMonthlyOffer] = useState<number>(50000)
@@ -57,29 +65,10 @@ export function OfferAuditor({
   const [auditResult, setAuditResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      setApiKey(saved)
-      setHasSavedKey(true)
-    }
-  }, [])
-
-  const handleSaveKey = (key: string) => {
-    setApiKey(key)
-    if (key.trim()) {
-      localStorage.setItem(STORAGE_KEY, key.trim())
-      setHasSavedKey(true)
-    } else {
-      localStorage.removeItem(STORAGE_KEY)
-      setHasSavedKey(false)
-    }
-  }
+  const hasSavedKey = Boolean(apiKey.trim())
 
   const handleClearKey = () => {
-    localStorage.removeItem(STORAGE_KEY)
     setApiKey("")
-    setHasSavedKey(false)
   }
 
   const handleRunAudit = async (e: React.FormEvent) => {
@@ -191,7 +180,7 @@ export function OfferAuditor({
               type="password"
               placeholder="AIzaSy..."
               value={apiKey}
-              onChange={(e) => handleSaveKey(e.target.value)}
+              onChange={(e) => setApiKey(e.target.value)}
               className="h-8 flex-1 rounded-md border border-input bg-background px-3 font-mono text-xs focus:ring-1 focus:ring-primary focus:outline-hidden"
             />
             <a
@@ -230,9 +219,9 @@ export function OfferAuditor({
               />
             </div>
             <div className="flex justify-between font-mono text-[10px] text-muted-foreground">
-              <span>P25: ₱{currentStats.p25.toLocaleString()}</span>
-              <span>Median: ₱{currentStats.p50.toLocaleString()}</span>
-              <span>P75: ₱{currentStats.p75.toLocaleString()}</span>
+              <span>P25: {formatPhp(currentStats.p25)}</span>
+              <span>Median: {formatPhp(currentStats.p50)}</span>
+              <span>P75: {formatPhp(currentStats.p75)}</span>
             </div>
           </div>
         )}
@@ -291,8 +280,9 @@ export function OfferAuditor({
               Work Scope
             </label>
             <Select
+              items={WORK_SCOPES}
               value={workScope}
-              onValueChange={(val) => val && setWorkScope(val)}
+              onValueChange={(val) => val && setWorkScope(val as WorkScope)}
             >
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue />

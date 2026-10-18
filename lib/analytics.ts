@@ -3,9 +3,12 @@ import {
   CareerRecord,
   FilterState,
   MacroIndustry,
+  MacroIndustrySchema,
   PercentileStats,
   SeniorityBand,
+  SeniorityBandSchema,
   SchoolTierGroup,
+  SchoolTierGroupSchema,
   WorkScope,
 } from "./types"
 
@@ -147,13 +150,7 @@ export function queryDashboardSlice(
   const salaryStats = computePercentiles(salaryValues)
 
   // Breakdown by Seniority Band
-  const bands: SeniorityBand[] = [
-    "ENTRY_0",
-    "JUNIOR_1_2",
-    "MID_3_5",
-    "SENIOR_6_9",
-    "STAFF_LEAD_10_PLUS",
-  ]
+  const bands = SeniorityBandSchema.options
   const bySeniority = {} as Record<SeniorityBand, PercentileStats>
   for (const band of bands) {
     const bandValues = filtered
@@ -180,13 +177,9 @@ export function queryDashboardSlice(
     statsNo.p50 > 0 ? Math.round((liftPhp / statsNo.p50) * 100) : 0
 
   // Breakdown by School Tier
-  const schoolTiers: SchoolTierGroup[] = [
-    "UP_SYSTEM",
-    "ADMU_DLSU_UST",
-    "STATE_UNIV_POLYTECHNIC",
-    "PRIVATE_METRO",
-    "PROVINCIAL_UNIV",
-  ]
+  const schoolTiers = SchoolTierGroupSchema.options.filter(
+    (t) => t !== "UNKNOWN"
+  )
   const bySchoolTier = {} as Record<SchoolTierGroup, PercentileStats>
   for (const tier of schoolTiers) {
     const tierValues = filtered
@@ -196,21 +189,7 @@ export function queryDashboardSlice(
   }
 
   // Benefits Matrix by MacroIndustry (from all records with benefits)
-  const industries: MacroIndustry[] = [
-    "TECH_IT",
-    "FINANCE_BANKING",
-    "FMCG_RETAIL",
-    "BPO_SHARED_SERVICES",
-    "ENGINEERING_CONSTRUCTION",
-    "MEDIA_ADVERTISING",
-    "GOVERNMENT_PUBLIC_SECTOR",
-    "EDUCATION_ACADEME",
-    "HEALTHCARE_PHARMA",
-    "CONSULTING_MARKET_RESEARCH",
-    "MANUFACTURING_LOGISTICS",
-    "OTHER",
-  ]
-
+  const industries = MacroIndustrySchema.options
   const benefitsMatrix = {} as DashboardAnalytics["benefitsMatrix"]
   for (const ind of industries) {
     const indRecords = records.filter(
@@ -252,12 +231,27 @@ export function queryDashboardSlice(
       ) {
         return false
       }
+      if (
+        filter.seniorityBand &&
+        filter.seniorityBand !== "ALL" &&
+        r.seniorityBand !== filter.seniorityBand
+      ) {
+        return false
+      }
+      if (
+        filter.schoolTier &&
+        filter.schoolTier !== "ALL" &&
+        r.schoolTierGroup !== filter.schoolTier
+      ) {
+        return false
+      }
       if (filter.searchQuery && filter.searchQuery.trim() !== "") {
         const q = filter.searchQuery.toLowerCase()
         return (
           r.mentorAdviceQuote!.toLowerCase().includes(q) ||
           r.rawTitle.toLowerCase().includes(q) ||
-          r.roleFamily.toLowerCase().includes(q)
+          r.roleFamily.toLowerCase().includes(q) ||
+          (r.schoolCanonical && r.schoolCanonical.toLowerCase().includes(q))
         )
       }
       return true

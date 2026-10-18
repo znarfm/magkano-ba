@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
+import { formatPhp, formatPhpK } from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -29,6 +30,14 @@ import {
   Tooltip,
   Legend,
 } from "recharts"
+
+const GUARANTEED_MONTHS_OPTIONS = [
+  { value: "12", label: "12 Mos (No 13th Month)" },
+  { value: "13", label: "13 Mos (PH Legal Standard)" },
+  { value: "14", label: "14 Mos" },
+  { value: "15", label: "15 Mos" },
+  { value: "16", label: "16 Mos (Top Tier Bank/FMCG)" },
+]
 
 export function NetArbitrageSimulator() {
   const [localGross, setLocalGross] = useState<number>(60000)
@@ -72,7 +81,7 @@ export function NetArbitrageSimulator() {
                 PH Local Monthly Base Salary:
               </span>
               <span className="font-mono text-sm font-bold text-foreground">
-                ₱{localGross.toLocaleString()}/mo
+                {formatPhp(localGross)}/mo
               </span>
             </div>
             <Slider
@@ -101,6 +110,7 @@ export function NetArbitrageSimulator() {
               Guaranteed Months
             </label>
             <Select
+              items={GUARANTEED_MONTHS_OPTIONS}
               value={String(guaranteedMonths)}
               onValueChange={(v) => v && setGuaranteedMonths(parseInt(v, 10))}
             >
@@ -150,7 +160,7 @@ export function NetArbitrageSimulator() {
               Required Break-Even Remote Contract:
             </span>
             <div className="mt-0.5 font-mono text-2xl font-extrabold text-blue-700 dark:text-blue-300">
-              ₱{result.remoteBreakEvenMonthlyGross.toLocaleString()}
+              {formatPhp(result.remoteBreakEvenMonthlyGross)}
               <span className="text-xs font-normal text-muted-foreground">
                 /month
               </span>
@@ -160,12 +170,12 @@ export function NetArbitrageSimulator() {
             <div className="font-mono text-muted-foreground">
               Net Take-Home:{" "}
               <strong>
-                ₱{result.localMonthlyNetEquivalent.toLocaleString()}/mo
+                {formatPhp(result.localMonthlyNetEquivalent)}/mo
               </strong>
             </div>
             <div className="font-mono text-[11px] text-muted-foreground">
-              Annual Benefits & Bonuses: ₱
-              {result.benefitsAnnualLocal.toLocaleString()}
+              Annual Benefits & Bonuses:{" "}
+              {formatPhp(result.benefitsAnnualLocal)}
             </div>
           </div>
         </div>
@@ -199,9 +209,7 @@ export function NetArbitrageSimulator() {
                   fontSize={10}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val: number) =>
-                    `₱${(val / 1000).toFixed(0)}k`
-                  }
+                  tickFormatter={formatPhpK}
                 />
                 <YAxis
                   dataKey="name"
@@ -215,7 +223,7 @@ export function NetArbitrageSimulator() {
                 <Tooltip
                   formatter={(val: any) =>
                     typeof val === "number"
-                      ? `₱${val.toLocaleString()}`
+                      ? formatPhp(val)
                       : String(val ?? 0)
                   }
                   contentStyle={{
