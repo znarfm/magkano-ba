@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import dynamic from "next/dynamic"
 import { z } from "zod"
 import { CareerRecord, CareerRecordSchema, FilterState } from "@/lib/types"
 import { useLocalStorage } from "@/hooks/use-local-storage"
@@ -8,11 +9,6 @@ import { queryDashboardSlice } from "@/lib/analytics"
 import { FilterBar } from "@/components/filter-bar"
 import { PercentileExplorer } from "@/components/percentile-explorer"
 import { NegotiationLift } from "@/components/negotiation-lift"
-import { NetArbitrageSimulator } from "@/components/net-arbitrage"
-import { BenefitsMatrix } from "@/components/benefits-matrix"
-import { SchoolConvergence } from "@/components/school-convergence"
-import { MentorQuotesFeed } from "@/components/mentor-quotes"
-import { OfferAuditor } from "@/components/auditor/offer-auditor"
 import { MethodologyModal } from "@/components/methodology-modal"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +19,38 @@ import {
   IconMessage2,
   IconBuildingArch,
 } from "@tabler/icons-react"
+
+const NetArbitrageSimulator = dynamic(
+  () =>
+    import("@/components/net-arbitrage").then(
+      (mod) => mod.NetArbitrageSimulator
+    ),
+  { ssr: false }
+)
+const SchoolConvergence = dynamic(
+  () =>
+    import("@/components/school-convergence").then(
+      (mod) => mod.SchoolConvergence
+    ),
+  { ssr: false }
+)
+const BenefitsMatrix = dynamic(
+  () =>
+    import("@/components/benefits-matrix").then((mod) => mod.BenefitsMatrix),
+  { ssr: false }
+)
+const OfferAuditor = dynamic(
+  () =>
+    import("@/components/auditor/offer-auditor").then(
+      (mod) => mod.OfferAuditor
+    ),
+  { ssr: false }
+)
+const MentorQuotesFeed = dynamic(
+  () =>
+    import("@/components/mentor-quotes").then((mod) => mod.MentorQuotesFeed),
+  { ssr: false }
+)
 
 export default function DashboardPage() {
   const [records, setRecords] = useState<CareerRecord[]>([])
@@ -43,18 +71,20 @@ export default function DashboardPage() {
     fetch("/data/records.json")
       .then((res) => res.json())
       .then((raw) => {
-        const parsed = z.array(CareerRecordSchema).safeParse(raw)
-        if (parsed.success) {
-          setRecords(parsed.data)
-        } else {
-          console.error(
-            "Schema validation warning on records.json:",
-            parsed.error.issues.length,
-            "issues"
-          )
-          if (Array.isArray(raw)) {
-            setRecords(raw as CareerRecord[])
+        if (process.env.NODE_ENV === "development") {
+          const parsed = z.array(CareerRecordSchema).safeParse(raw)
+          if (parsed.success) {
+            setRecords(parsed.data)
+          } else {
+            console.error(
+              "Schema validation warning on records.json:",
+              parsed.error.issues.length,
+              "issues"
+            )
+            setRecords(Array.isArray(raw) ? (raw as CareerRecord[]) : [])
           }
+        } else {
+          setRecords(Array.isArray(raw) ? (raw as CareerRecord[]) : [])
         }
         setLoading(false)
       })
