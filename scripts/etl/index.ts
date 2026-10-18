@@ -2,6 +2,7 @@ import fs from "fs"
 import path from "path"
 import {
   CareerRecord,
+  CareerRecordSchema,
   MacroIndustry,
   SeniorityBand,
   WorkScope,
@@ -652,15 +653,15 @@ export function runETL() {
         rawBenefitsSummary: rawContext?.trim() || null,
       }
 
-      records.push({
+      const candidate = {
         id: `liyab-${recordId++}`,
-        sourceSheet: "LIYAB_FIRST_PAY",
+        sourceSheet: "LIYAB_FIRST_PAY" as const,
         cohortYear,
         macroIndustry,
         roleFamily,
         rawTitle: (rawRole || "Associate").trim(),
         yoeYears: 0,
-        seniorityBand: "ENTRY_0",
+        seniorityBand: "ENTRY_0" as const,
         workScope,
         nominalMonthlyGrossPhp: salary,
         negotiatedOffer,
@@ -669,7 +670,12 @@ export function runETL() {
         gender,
         benefits,
         mentorAdviceQuote: rawContext?.trim() || null,
-      })
+      }
+
+      const parsed = CareerRecordSchema.safeParse(candidate)
+      if (parsed.success) {
+        records.push(parsed.data)
+      }
     }
     console.log(`Ingested ${records.length} records from Liyab First Pay.`)
   }
@@ -731,9 +737,9 @@ export function runETL() {
         workScope
       )
 
-      records.push({
+      const candidate = {
         id: `cpi-${recordId++}`,
-        sourceSheet: "CAREER_PATH_INFO",
+        sourceSheet: "CAREER_PATH_INFO" as const,
         cohortYear,
         macroIndustry,
         roleFamily,
@@ -745,11 +751,16 @@ export function runETL() {
         negotiatedOffer: null,
         schoolCanonical,
         schoolTierGroup,
-        gender: "UNDISCLOSED",
+        gender: "UNDISCLOSED" as const,
         benefits,
         mentorAdviceQuote: quote,
-      })
-      cpiCount++
+      }
+
+      const parsed = CareerRecordSchema.safeParse(candidate)
+      if (parsed.success) {
+        records.push(parsed.data)
+        cpiCount++
+      }
     }
     console.log(`Ingested ${cpiCount} records from Career Path Info.`)
   }

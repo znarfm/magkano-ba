@@ -1,16 +1,19 @@
-'use client';
+"use client"
 
-import React, { useState } from 'react';
-import { MacroIndustry } from '@/lib/types';
-import { prepareBenefitsMatrixData, IndustryBenefitsPoint } from '@/lib/chart-adapters';
+import React, { useState } from "react"
+import { MacroIndustry } from "@/lib/types"
+import {
+  prepareBenefitsMatrixData,
+  IndustryBenefitsPoint,
+} from "@/lib/chart-adapters"
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import {
   ResponsiveContainer,
   BarChart,
@@ -20,23 +23,23 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-} from 'recharts';
+} from "recharts"
 
 interface BenefitsMatrixProps {
   matrix: Record<
     MacroIndustry,
     {
-      sampleCount: number;
-      medianGuaranteedMonths: number;
-      medianAllowancePhp: number;
-      avgLeaveDays: number;
+      sampleCount: number
+      medianGuaranteedMonths: number
+      medianAllowancePhp: number
+      avgLeaveDays: number
     }
-  >;
+  >
 }
 
 export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
-  const chartData = prepareBenefitsMatrixData(matrix);
-  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  const chartData = prepareBenefitsMatrixData(matrix)
+  const [viewMode, setViewMode] = useState<"chart" | "table">("chart")
 
   return (
     <Card className="shadow-xs">
@@ -46,28 +49,29 @@ export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
             Total Comp & Benefits Structure by Macro Industry
           </CardTitle>
           <CardDescription className="text-xs">
-            Guaranteed bonus months (13th–16th month), monthly de minimis allowances, and annual leave averages.
+            Guaranteed bonus months (13th–16th month), monthly de minimis
+            allowances, and annual leave averages.
           </CardDescription>
         </div>
         <div className="flex items-center gap-1.5 rounded-lg border border-border/80 bg-muted/40 p-1">
           <button
             type="button"
-            onClick={() => setViewMode('chart')}
+            onClick={() => setViewMode("chart")}
             className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-              viewMode === 'chart'
-                ? 'bg-primary text-primary-foreground shadow-xs'
-                : 'text-muted-foreground hover:text-foreground'
+              viewMode === "chart"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Visual Ranking
           </button>
           <button
             type="button"
-            onClick={() => setViewMode('table')}
+            onClick={() => setViewMode("table")}
             className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-              viewMode === 'table'
-                ? 'bg-primary text-primary-foreground shadow-xs'
-                : 'text-muted-foreground hover:text-foreground'
+              viewMode === "table"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Detailed Table
@@ -76,14 +80,24 @@ export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
       </CardHeader>
 
       <CardContent className="pt-2">
-        {viewMode === 'chart' ? (
-          <div className="h-[280px] w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
+        {viewMode === "chart" ? (
+          <div className="h-[280px] min-h-0 w-full min-w-0 pt-2">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+              minWidth={0}
+              minHeight={0}
+            >
               <BarChart
                 data={chartData}
                 margin={{ top: 10, right: 20, left: 0, bottom: 25 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="var(--border)"
+                  opacity={0.5}
+                />
                 <XAxis
                   dataKey="industry"
                   stroke="var(--muted-foreground)"
@@ -110,29 +124,39 @@ export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
                   fontSize={10}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val: number) => `₱${(val / 1000).toFixed(0)}k`}
+                  tickFormatter={(val: number) =>
+                    `₱${(val / 1000).toFixed(0)}k`
+                  }
                 />
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (!active || !payload || !payload.length) return null;
-                    const pt = payload[0].payload as IndustryBenefitsPoint;
+                    if (!active || !payload || !payload.length) return null
+                    const pt = payload[0].payload as IndustryBenefitsPoint
                     return (
-                      <div className="rounded-lg border border-border bg-card p-3 shadow-md text-xs space-y-1">
-                        <div className="font-semibold text-foreground">{pt.industry}</div>
-                        <div className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                      <div className="space-y-1 rounded-lg border border-border bg-card p-3 text-xs shadow-md">
+                        <div className="font-semibold text-foreground">
+                          {pt.industry}
+                        </div>
+                        <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                           Guaranteed: {pt.guaranteedMonths} Months Pay
                         </div>
-                        <div className="font-mono text-blue-600 dark:text-blue-400 font-medium">
-                          Allowance: {pt.allowancePhp > 0 ? `₱${pt.allowancePhp.toLocaleString()}/mo` : 'None'}
+                        <div className="font-mono font-medium text-blue-600 dark:text-blue-400">
+                          Allowance:{" "}
+                          {pt.allowancePhp > 0
+                            ? `₱${pt.allowancePhp.toLocaleString()}/mo`
+                            : "None"}
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-mono">
-                          Vacation Leaves: {pt.leaveDays} days · Sample: n={pt.sampleCount}
+                        <div className="font-mono text-[10px] text-muted-foreground">
+                          Vacation Leaves: {pt.leaveDays} days · Sample: n=
+                          {pt.sampleCount}
                         </div>
                       </div>
-                    );
+                    )
                   }}
                 />
-                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                <Legend
+                  wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }}
+                />
                 <Bar
                   yAxisId="left"
                   dataKey="guaranteedMonths"
@@ -156,32 +180,39 @@ export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-border/70 text-muted-foreground font-semibold">
+                <tr className="border-b border-border/70 font-semibold text-muted-foreground">
                   <th className="py-2.5 pr-4">Macro Industry</th>
-                  <th className="py-2.5 px-3 text-center">Guaranteed Months</th>
-                  <th className="py-2.5 px-3 text-right">Median Allowance</th>
-                  <th className="py-2.5 px-3 text-center">Avg Leaves</th>
+                  <th className="px-3 py-2.5 text-center">Guaranteed Months</th>
+                  <th className="px-3 py-2.5 text-right">Median Allowance</th>
+                  <th className="px-3 py-2.5 text-center">Avg Leaves</th>
                   <th className="py-2.5 pl-3 text-right">Sample (n)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40 font-mono">
                 {chartData.map((row) => (
-                  <tr key={row.industryKey} className="hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={row.industryKey}
+                    className="transition-colors hover:bg-muted/30"
+                  >
                     <td className="py-2.5 pr-4 font-sans font-medium text-foreground">
                       {row.industry}
                     </td>
-                    <td className="py-2.5 px-3 text-center">
+                    <td className="px-3 py-2.5 text-center">
                       <Badge
-                        variant={row.guaranteedMonths >= 14 ? 'default' : 'secondary'}
+                        variant={
+                          row.guaranteedMonths >= 14 ? "default" : "secondary"
+                        }
                         className="font-mono text-[11px]"
                       >
                         {row.guaranteedMonths} mos
                       </Badge>
                     </td>
-                    <td className="py-2.5 px-3 text-right font-medium">
-                      {row.allowancePhp > 0 ? `₱${row.allowancePhp.toLocaleString()}` : '—'}
+                    <td className="px-3 py-2.5 text-right font-medium">
+                      {row.allowancePhp > 0
+                        ? `₱${row.allowancePhp.toLocaleString()}`
+                        : "—"}
                     </td>
-                    <td className="py-2.5 px-3 text-center">
+                    <td className="px-3 py-2.5 text-center">
                       {row.leaveDays} days
                     </td>
                     <td className="py-2.5 pl-3 text-right text-muted-foreground">
@@ -195,5 +226,5 @@ export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
         )}
       </CardContent>
     </Card>
-  );
+  )
 }

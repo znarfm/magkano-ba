@@ -1,15 +1,18 @@
-'use client';
+"use client"
 
-import React from 'react';
-import { prepareNegotiationChartData, NegotiationPoint } from '@/lib/chart-adapters';
+import React from "react"
+import {
+  prepareNegotiationChartData,
+  NegotiationPoint,
+} from "@/lib/chart-adapters"
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import {
   ResponsiveContainer,
   BarChart,
@@ -19,28 +22,30 @@ import {
   CartesianGrid,
   Tooltip,
   Cell,
-} from 'recharts';
+} from "recharts"
 
 interface NegotiationLiftProps {
   lift: {
-    negotiatedMedian: number;
-    nonNegotiatedMedian: number;
-    liftPhp: number;
-    liftPercent: number;
-    negotiatedCount: number;
-    nonNegotiatedCount: number;
-  };
+    negotiatedMedian: number
+    nonNegotiatedMedian: number
+    liftPhp: number
+    liftPercent: number
+    negotiatedCount: number
+    nonNegotiatedCount: number
+  }
 }
 
 export function NegotiationLift({ lift }: NegotiationLiftProps) {
-  const chartData = prepareNegotiationChartData(lift);
-  const hasData = lift.negotiatedCount > 0 && lift.nonNegotiatedCount > 0;
+  const chartData = prepareNegotiationChartData(lift)
+  const hasData = lift.negotiatedCount > 0 && lift.nonNegotiatedCount > 0
 
   return (
-    <Card className="shadow-xs flex flex-col justify-between">
+    <Card className="flex flex-col justify-between shadow-xs">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base">Fresh Grad Negotiation Lift</CardTitle>
+          <CardTitle className="text-base">
+            Fresh Grad Negotiation Lift
+          </CardTitle>
           {hasData && (
             <Badge
               variant="outline"
@@ -51,7 +56,8 @@ export function NegotiationLift({ lift }: NegotiationLiftProps) {
           )}
         </div>
         <CardDescription className="text-xs">
-          Starting salary comparison between fresh grads who negotiated vs. those who accepted initial offers.
+          Starting salary comparison between fresh grads who negotiated vs.
+          those who accepted initial offers.
         </CardDescription>
       </CardHeader>
 
@@ -62,10 +68,23 @@ export function NegotiationLift({ lift }: NegotiationLiftProps) {
           </div>
         ) : (
           <>
-            <div className="h-[170px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+            <div className="h-[170px] min-h-0 w-full min-w-0">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+                minWidth={0}
+                minHeight={0}
+              >
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="var(--border)"
+                    opacity={0.5}
+                  />
                   <XAxis
                     dataKey="category"
                     stroke="var(--muted-foreground)"
@@ -78,23 +97,27 @@ export function NegotiationLift({ lift }: NegotiationLiftProps) {
                     fontSize={10}
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={(val: number) => `₱${(val / 1000).toFixed(0)}k`}
+                    tickFormatter={(val: number) =>
+                      `₱${(val / 1000).toFixed(0)}k`
+                    }
                   />
                   <Tooltip
                     content={({ active, payload }) => {
-                      if (!active || !payload || !payload.length) return null;
-                      const pt = payload[0].payload as NegotiationPoint;
+                      if (!active || !payload || !payload.length) return null
+                      const pt = payload[0].payload as NegotiationPoint
                       return (
-                        <div className="rounded-lg border border-border bg-card p-2.5 shadow-md text-xs space-y-1">
-                          <div className="font-semibold text-foreground">{pt.category}</div>
-                          <div className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                        <div className="space-y-1 rounded-lg border border-border bg-card p-2.5 text-xs shadow-md">
+                          <div className="font-semibold text-foreground">
+                            {pt.category}
+                          </div>
+                          <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                             ₱{pt.median.toLocaleString()}/mo
                           </div>
-                          <div className="text-[10px] text-muted-foreground font-mono">
+                          <div className="font-mono text-[10px] text-muted-foreground">
                             Sample Size: n = {pt.count}
                           </div>
                         </div>
-                      );
+                      )
                     }}
                   />
                   <Bar dataKey="median" radius={[6, 6, 0, 0]} maxBarSize={48}>
@@ -116,12 +139,13 @@ export function NegotiationLift({ lift }: NegotiationLiftProps) {
                 </span>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                ≈ +₱{(Math.max(0, lift.liftPhp) * 13).toLocaleString()}/year annualized with 13th month.
+                ≈ +₱{(Math.max(0, lift.liftPhp) * 13).toLocaleString()}/year
+                annualized with 13th month.
               </p>
             </div>
           </>
         )}
       </CardContent>
     </Card>
-  );
+  )
 }

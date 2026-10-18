@@ -1,74 +1,133 @@
-export type WorkScope =
-  "PH_LOCAL" | "FOREIGN_REMOTE" | "LIKELY_REMOTE_INTL" | "OVERSEAS_OFW"
+import { z } from "zod"
 
-export type SeniorityBand =
-  "ENTRY_0" | "JUNIOR_1_2" | "MID_3_5" | "SENIOR_6_9" | "STAFF_LEAD_10_PLUS"
+// Primitive Domain Enums
+export const WorkScopeSchema = z.enum([
+  "PH_LOCAL",
+  "FOREIGN_REMOTE",
+  "LIKELY_REMOTE_INTL",
+  "OVERSEAS_OFW",
+])
+export type WorkScope = z.infer<typeof WorkScopeSchema>
 
-export type MacroIndustry =
-  | "TECH_IT"
-  | "FINANCE_BANKING"
-  | "FMCG_RETAIL"
-  | "BPO_SHARED_SERVICES"
-  | "ENGINEERING_CONSTRUCTION"
-  | "MEDIA_ADVERTISING"
-  | "GOVERNMENT_PUBLIC_SECTOR"
-  | "EDUCATION_ACADEME"
-  | "HEALTHCARE_PHARMA"
-  | "CONSULTING_MARKET_RESEARCH"
-  | "MANUFACTURING_LOGISTICS"
-  | "OTHER"
+export const SeniorityBandSchema = z.enum([
+  "ENTRY_0",
+  "JUNIOR_1_2",
+  "MID_3_5",
+  "SENIOR_6_9",
+  "STAFF_LEAD_10_PLUS",
+])
+export type SeniorityBand = z.infer<typeof SeniorityBandSchema>
 
-export type SchoolTierGroup =
-  | "UP_SYSTEM"
-  | "ADMU_DLSU_UST"
-  | "STATE_UNIV_POLYTECHNIC"
-  | "PRIVATE_METRO"
-  | "PROVINCIAL_UNIV"
-  | "UNKNOWN"
+export const MacroIndustrySchema = z.enum([
+  "TECH_IT",
+  "FINANCE_BANKING",
+  "FMCG_RETAIL",
+  "BPO_SHARED_SERVICES",
+  "ENGINEERING_CONSTRUCTION",
+  "MEDIA_ADVERTISING",
+  "GOVERNMENT_PUBLIC_SECTOR",
+  "EDUCATION_ACADEME",
+  "HEALTHCARE_PHARMA",
+  "CONSULTING_MARKET_RESEARCH",
+  "MANUFACTURING_LOGISTICS",
+  "OTHER",
+])
+export type MacroIndustry = z.infer<typeof MacroIndustrySchema>
 
-export type Gender = "FEMALE" | "MALE" | "NON_BINARY_OTHER" | "UNDISCLOSED"
+export const SchoolTierGroupSchema = z.enum([
+  "UP_SYSTEM",
+  "ADMU_DLSU_UST",
+  "STATE_UNIV_POLYTECHNIC",
+  "PRIVATE_METRO",
+  "PROVINCIAL_UNIV",
+  "UNKNOWN",
+])
+export type SchoolTierGroup = z.infer<typeof SchoolTierGroupSchema>
 
-export interface BenefitBreakdown {
-  guaranteedMonths: number // Default 13 for PH_LOCAL, 12 for FOREIGN_REMOTE
-  monthlyAllowancePhp: number
-  hmoCoveragePhp: number | null
-  vacationLeaveDays: number | null
-  rawBenefitsSummary: string | null
-}
+export const GenderSchema = z.enum([
+  "FEMALE",
+  "MALE",
+  "NON_BINARY_OTHER",
+  "UNDISCLOSED",
+])
+export type Gender = z.infer<typeof GenderSchema>
 
-export interface CareerRecord {
-  id: string
-  sourceSheet: "LIYAB_FIRST_PAY" | "CAREER_PATH_INFO"
-  cohortYear: number
-  macroIndustry: MacroIndustry
-  roleFamily: string
-  rawTitle: string
-  yoeYears: number
-  seniorityBand: SeniorityBand
-  workScope: WorkScope
-  nominalMonthlyGrossPhp: {
-    min: number
-    median: number
-    max: number
-  }
-  negotiatedOffer: boolean | null
-  schoolCanonical: string | null
-  schoolTierGroup: SchoolTierGroup
-  gender: Gender
-  benefits: BenefitBreakdown
-  mentorAdviceQuote: string | null
-}
+// Benefit Breakdown Schema
+export const BenefitBreakdownSchema = z.object({
+  guaranteedMonths: z.number().min(12).max(24).default(13),
+  monthlyAllowancePhp: z.number().min(0).default(0),
+  hmoCoveragePhp: z.number().min(0).nullable(),
+  vacationLeaveDays: z.number().min(0).max(90).nullable(),
+  rawBenefitsSummary: z.string().nullable(),
+})
+export type BenefitBreakdown = z.infer<typeof BenefitBreakdownSchema>
 
-export interface FilterState {
-  macroIndustry?: MacroIndustry | "ALL"
-  roleFamily?: string | "ALL"
-  seniorityBand?: SeniorityBand | "ALL"
-  workScopes: WorkScope[]
-  cpiAdjusted: boolean
-  takeHomeParity: boolean
-  schoolTier?: SchoolTierGroup | "ALL"
-  searchQuery?: string
-}
+// Salary Range with mathematical invariant: min <= median <= max
+export const SalaryRangeSchema = z
+  .object({
+    min: z.number().min(0),
+    median: z.number().min(0),
+    max: z.number().min(0),
+  })
+  .refine((data) => data.min <= data.median && data.median <= data.max, {
+    message: "min must be <= median and median must be <= max",
+  })
+export type SalaryRange = z.infer<typeof SalaryRangeSchema>
+
+// Canonical Career Record Schema
+export const CareerRecordSchema = z.object({
+  id: z.string().min(1),
+  sourceSheet: z.enum(["LIYAB_FIRST_PAY", "CAREER_PATH_INFO"]),
+  cohortYear: z.number().int().min(1990).max(2030),
+  macroIndustry: MacroIndustrySchema,
+  roleFamily: z.string().min(1),
+  rawTitle: z.string().min(1),
+  yoeYears: z.number().min(0).max(60),
+  seniorityBand: SeniorityBandSchema,
+  workScope: WorkScopeSchema,
+  nominalMonthlyGrossPhp: SalaryRangeSchema,
+  negotiatedOffer: z.boolean().nullable(),
+  schoolCanonical: z.string().nullable(),
+  schoolTierGroup: SchoolTierGroupSchema,
+  gender: GenderSchema,
+  benefits: BenefitBreakdownSchema,
+  mentorAdviceQuote: z.string().nullable(),
+})
+export type CareerRecord = z.infer<typeof CareerRecordSchema>
+
+// Filter State Schema with sensible defaults
+export const FilterStateSchema = z.object({
+  macroIndustry: z
+    .union([MacroIndustrySchema, z.literal("ALL")])
+    .default("ALL"),
+  roleFamily: z.string().default("ALL"),
+  seniorityBand: z
+    .union([SeniorityBandSchema, z.literal("ALL")])
+    .default("ALL"),
+  workScopes: z.array(WorkScopeSchema).min(1),
+  cpiAdjusted: z.boolean().default(true),
+  takeHomeParity: z.boolean().default(false),
+  schoolTier: z.union([SchoolTierGroupSchema, z.literal("ALL")]).default("ALL"),
+  searchQuery: z.string().default(""),
+})
+export type FilterState = z.infer<typeof FilterStateSchema>
+
+// Auditor Input Profile Schema
+export const AuditProfileSchema = z.object({
+  role: z.string().min(1, "Target role is required"),
+  yoe: z
+    .number()
+    .min(0, "Years of experience cannot be negative")
+    .max(60, "Years of experience exceeds maximum realistic limit"),
+  monthlyOfferPhp: z
+    .number()
+    .min(3000, "Monthly offer is below statutory minimum")
+    .max(5000000, "Monthly offer exceeds maximum realistic ceiling"),
+  workScope: WorkScopeSchema,
+  school: z.string().default(""),
+  macroIndustry: MacroIndustrySchema,
+})
+export type AuditProfile = z.infer<typeof AuditProfileSchema>
 
 export interface PercentileStats {
   p25: number

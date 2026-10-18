@@ -1,14 +1,12 @@
-import { PercentileStats, CareerRecord } from "./types"
+import {
+  PercentileStats,
+  CareerRecord,
+  AuditProfile,
+  AuditProfileSchema,
+} from "./types"
 import { ArbitrageComparison } from "./economics"
 
-export interface AuditProfile {
-  role: string
-  yoe: number
-  monthlyOfferPhp: number
-  workScope: string
-  school: string
-  macroIndustry: string
-}
+export type { AuditProfile }
 
 export interface GroundedPromptPayload {
   systemPrompt: string
@@ -24,6 +22,7 @@ export function buildGroundedAuditPrompt(
   arbitrage: ArbitrageComparison,
   matchedQuotes: CareerRecord[]
 ): GroundedPromptPayload {
+  const validProfile = AuditProfileSchema.parse(profile)
   const systemPrompt = `You are a pragmatic, analytical Filipino career advisor and compensation auditor.
 You must strictly base your evaluation and advice ONLY on the provided dataset percentiles, tax breakdown, and verified peer quotes below.
 NEVER fabricate or hallucinate salary numbers, tax rates, or market averages.

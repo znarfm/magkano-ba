@@ -1,16 +1,19 @@
-'use client';
+"use client"
 
-import React from 'react';
-import { PercentileStats, SchoolTierGroup } from '@/lib/types';
-import { prepareSchoolConvergenceData, SchoolTierPoint } from '@/lib/chart-adapters';
+import React from "react"
+import { PercentileStats, SchoolTierGroup } from "@/lib/types"
+import {
+  prepareSchoolConvergenceData,
+  SchoolTierPoint,
+} from "@/lib/chart-adapters"
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import {
   ResponsiveContainer,
   BarChart,
@@ -19,15 +22,18 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-} from 'recharts';
+} from "recharts"
 
 interface SchoolConvergenceProps {
-  bySchoolTier: Record<SchoolTierGroup, PercentileStats>;
-  cpiAdjusted: boolean;
+  bySchoolTier: Record<SchoolTierGroup, PercentileStats>
+  cpiAdjusted: boolean
 }
 
-export function SchoolConvergence({ bySchoolTier, cpiAdjusted }: SchoolConvergenceProps) {
-  const chartData = prepareSchoolConvergenceData(bySchoolTier);
+export function SchoolConvergence({
+  bySchoolTier,
+  cpiAdjusted,
+}: SchoolConvergenceProps) {
+  const chartData = prepareSchoolConvergenceData(bySchoolTier)
 
   return (
     <Card className="shadow-xs">
@@ -37,11 +43,12 @@ export function SchoolConvergence({ bySchoolTier, cpiAdjusted }: SchoolConvergen
             Alma Mater Starting Pay & Tier Benchmarks
           </CardTitle>
           <Badge variant="outline" className="font-mono text-xs">
-            {cpiAdjusted ? '2026 CPI-Adjusted' : 'Nominal PHP'}
+            {cpiAdjusted ? "2026 CPI-Adjusted" : "Nominal PHP"}
           </Badge>
         </div>
         <CardDescription className="text-xs">
-          Median starting compensation and interquartile ranges across Philippine university cohorts.
+          Median starting compensation and interquartile ranges across
+          Philippine university cohorts.
         </CardDescription>
       </CardHeader>
 
@@ -51,21 +58,33 @@ export function SchoolConvergence({ bySchoolTier, cpiAdjusted }: SchoolConvergen
             No school cohort data available in current filter.
           </div>
         ) : (
-          <div className="h-[200px] w-full pt-1">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[200px] min-h-0 w-full min-w-0 pt-1">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+              minWidth={0}
+              minHeight={0}
+            >
               <BarChart
                 data={chartData}
                 layout="vertical"
                 margin={{ top: 5, right: 20, left: 20, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" opacity={0.5} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  horizontal={false}
+                  stroke="var(--border)"
+                  opacity={0.5}
+                />
                 <XAxis
                   type="number"
                   stroke="var(--muted-foreground)"
                   fontSize={10}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val: number) => `₱${(val / 1000).toFixed(0)}k`}
+                  tickFormatter={(val: number) =>
+                    `₱${(val / 1000).toFixed(0)}k`
+                  }
                 />
                 <YAxis
                   dataKey="label"
@@ -78,23 +97,25 @@ export function SchoolConvergence({ bySchoolTier, cpiAdjusted }: SchoolConvergen
                 />
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (!active || !payload || !payload.length) return null;
-                    const pt = payload[0].payload as SchoolTierPoint;
+                    if (!active || !payload || !payload.length) return null
+                    const pt = payload[0].payload as SchoolTierPoint
                     return (
-                      <div className="rounded-lg border border-border bg-card p-2.5 shadow-md text-xs space-y-1">
-                        <div className="font-semibold text-foreground">{pt.label}</div>
+                      <div className="space-y-1 rounded-lg border border-border bg-card p-2.5 text-xs shadow-md">
+                        <div className="font-semibold text-foreground">
+                          {pt.label}
+                        </div>
                         <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                           Median: ₱{pt.median.toLocaleString()}/mo
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground font-mono">
+                        <div className="grid grid-cols-2 gap-2 font-mono text-[10px] text-muted-foreground">
                           <span>P25: ₱{pt.p25.toLocaleString()}</span>
                           <span>P75: ₱{pt.p75.toLocaleString()}</span>
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-mono border-t border-border/40 pt-1">
+                        <div className="border-t border-border/40 pt-1 font-mono text-[10px] text-muted-foreground">
                           Sample Size: n = {pt.count}
                         </div>
                       </div>
-                    );
+                    )
                   }}
                 />
                 <Bar
@@ -110,5 +131,5 @@ export function SchoolConvergence({ bySchoolTier, cpiAdjusted }: SchoolConvergen
         )}
       </CardContent>
     </Card>
-  );
+  )
 }
