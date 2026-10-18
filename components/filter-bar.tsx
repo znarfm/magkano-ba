@@ -1,7 +1,16 @@
 'use client';
 
 import React from 'react';
-import { FilterState, MacroIndustry, SchoolTierGroup, SeniorityBand, WorkScope } from '@/lib/types';
+import { FilterState, MacroIndustry, SeniorityBand, WorkScope } from '@/lib/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { IconSearch, IconAdjustmentsHorizontal } from '@tabler/icons-react';
 
 interface FilterBarProps {
   filter: FilterState;
@@ -11,7 +20,7 @@ interface FilterBarProps {
 }
 
 const INDUSTRIES: { label: string; value: MacroIndustry | 'ALL' }[] = [
-  { label: 'All Industries', value: 'ALL' },
+  { label: 'All Macro Industries', value: 'ALL' },
   { label: 'Tech & IT', value: 'TECH_IT' },
   { label: 'Finance & Banking', value: 'FINANCE_BANKING' },
   { label: 'FMCG & Retail', value: 'FMCG_RETAIL' },
@@ -23,16 +32,16 @@ const INDUSTRIES: { label: string; value: MacroIndustry | 'ALL' }[] = [
   { label: 'Healthcare & Pharma', value: 'HEALTHCARE_PHARMA' },
   { label: 'Consulting & Market Research', value: 'CONSULTING_MARKET_RESEARCH' },
   { label: 'Manufacturing & Logistics', value: 'MANUFACTURING_LOGISTICS' },
-  { label: 'Other', value: 'OTHER' },
+  { label: 'General Business & Other', value: 'OTHER' },
 ];
 
 const SENIORITIES: { label: string; value: SeniorityBand | 'ALL' }[] = [
-  { label: 'All Seniorities', value: 'ALL' },
-  { label: '0 YOE (Entry)', value: 'ENTRY_0' },
+  { label: 'All Seniority Bands', value: 'ALL' },
+  { label: '0 YOE (Entry Level)', value: 'ENTRY_0' },
   { label: '1–2 YOE (Junior)', value: 'JUNIOR_1_2' },
-  { label: '3–5 YOE (Mid)', value: 'MID_3_5' },
+  { label: '3–5 YOE (Mid-Level)', value: 'MID_3_5' },
   { label: '6–9 YOE (Senior)', value: 'SENIOR_6_9' },
-  { label: '10+ YOE (Staff/Lead)', value: 'STAFF_LEAD_10_PLUS' },
+  { label: '10+ YOE (Staff / Lead)', value: 'STAFF_LEAD_10_PLUS' },
 ];
 
 const SCOPES: { label: string; value: WorkScope }[] = [
@@ -43,63 +52,92 @@ const SCOPES: { label: string; value: WorkScope }[] = [
 ];
 
 export function FilterBar({ filter, onChange, totalCount, filteredCount }: FilterBarProps) {
+  const [searchInput, setSearchInput] = React.useState(filter.searchQuery || '');
+
+  React.useEffect(() => {
+    setSearchInput(filter.searchQuery || '');
+  }, [filter.searchQuery]);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== (filter.searchQuery || '')) {
+        onChange({ ...filter, searchQuery: searchInput });
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [searchInput, filter, onChange]);
+
   const toggleScope = (scope: WorkScope) => {
     const exists = filter.workScopes.includes(scope);
     const nextScopes = exists
       ? filter.workScopes.filter((s) => s !== scope)
       : [...filter.workScopes, scope];
-    // Keep at least one selected
     if (nextScopes.length > 0) {
       onChange({ ...filter, workScopes: nextScopes });
     }
   };
 
   return (
-    <div className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-md px-4 py-3 shadow-xs">
+    <div className="sticky top-0 z-30 border-b border-border/80 bg-background/95 backdrop-blur-md px-4 py-3 shadow-xs">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
-        {/* Search & Selects */}
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            placeholder="Search role, keyword, or school..."
-            value={filter.searchQuery || ''}
-            onChange={(e) => onChange({ ...filter, searchQuery: e.target.value })}
-            className="h-9 w-52 md:w-64 rounded-md border border-input bg-background px-3 text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
-          />
+        {/* Search & Select Filters */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="relative">
+            <IconSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search title, school, or skill..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="h-9 w-48 sm:w-60 rounded-md border border-input bg-background pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+            />
+          </div>
 
-          <select
-            value={filter.macroIndustry || 'ALL'}
-            onChange={(e) =>
-              onChange({ ...filter, macroIndustry: e.target.value as MacroIndustry | 'ALL' })
-            }
-            className="h-9 rounded-md border border-input bg-background px-2.5 text-xs font-medium focus:outline-hidden focus:ring-1 focus:ring-primary"
-          >
-            {INDUSTRIES.map((ind) => (
-              <option key={ind.value} value={ind.value}>
-                {ind.label}
-              </option>
-            ))}
-          </select>
+          <div className="w-48 sm:w-56">
+            <Select
+              value={filter.macroIndustry || 'ALL'}
+              onValueChange={(val) =>
+                onChange({ ...filter, macroIndustry: (val as MacroIndustry | 'ALL') || 'ALL' })
+              }
+            >
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="All Macro Industries" />
+              </SelectTrigger>
+              <SelectContent>
+                {INDUSTRIES.map((ind) => (
+                  <SelectItem key={ind.value} value={ind.value} className="text-xs">
+                    {ind.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <select
-            value={filter.seniorityBand || 'ALL'}
-            onChange={(e) =>
-              onChange({ ...filter, seniorityBand: e.target.value as SeniorityBand | 'ALL' })
-            }
-            className="h-9 rounded-md border border-input bg-background px-2.5 text-xs font-medium focus:outline-hidden focus:ring-1 focus:ring-primary"
-          >
-            {SENIORITIES.map((sen) => (
-              <option key={sen.value} value={sen.value}>
-                {sen.label}
-              </option>
-            ))}
-          </select>
+          <div className="w-44 sm:w-52">
+            <Select
+              value={filter.seniorityBand || 'ALL'}
+              onValueChange={(val) =>
+                onChange({ ...filter, seniorityBand: (val as SeniorityBand | 'ALL') || 'ALL' })
+              }
+            >
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="All Seniority Bands" />
+              </SelectTrigger>
+              <SelectContent>
+                {SENIORITIES.map((sen) => (
+                  <SelectItem key={sen.value} value={sen.value} className="text-xs">
+                    {sen.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* Toggles: CPI & Parity */}
-        <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+        {/* Work Scope Badges & Analytical Toggles */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* Work Scopes */}
-          <div className="flex items-center gap-1 rounded-md border border-border bg-muted/40 p-1">
+          <div className="flex items-center gap-1.5 rounded-lg border border-border/80 bg-muted/30 p-1">
             {SCOPES.map((sc) => {
               const active = filter.workScopes.includes(sc.value);
               return (
@@ -107,9 +145,9 @@ export function FilterBar({ filter, onChange, totalCount, filteredCount }: Filte
                   key={sc.value}
                   type="button"
                   onClick={() => toggleScope(sc.value)}
-                  className={`rounded px-2 py-1 text-xs transition-colors ${
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
                     active
-                      ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                      ? 'bg-primary text-primary-foreground shadow-xs'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
@@ -123,31 +161,31 @@ export function FilterBar({ filter, onChange, totalCount, filteredCount }: Filte
           <button
             type="button"
             onClick={() => onChange({ ...filter, cpiAdjusted: !filter.cpiAdjusted })}
-            className={`rounded-md border px-2.5 py-1.5 transition-colors ${
+            className={`rounded-md border px-2.5 py-1 text-xs font-semibold transition-all ${
               filter.cpiAdjusted
-                ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
-                : 'border-input bg-background text-muted-foreground'
+                ? 'border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                : 'border-border bg-background text-muted-foreground hover:text-foreground'
             }`}
           >
-            {filter.cpiAdjusted ? '✓ 2026 CPI Adjusted' : 'Nominal PHP'}
+            {filter.cpiAdjusted ? '✓ 2026 CPI Adjusted' : 'Nominal Rates'}
           </button>
 
-          {/* Parity Toggle */}
+          {/* Net Parity Toggle */}
           <button
             type="button"
             onClick={() => onChange({ ...filter, takeHomeParity: !filter.takeHomeParity })}
-            className={`rounded-md border px-2.5 py-1.5 transition-colors ${
+            className={`rounded-md border px-2.5 py-1 text-xs font-semibold transition-all ${
               filter.takeHomeParity
-                ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                : 'border-input bg-background text-muted-foreground'
+                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                : 'border-border bg-background text-muted-foreground hover:text-foreground'
             }`}
           >
-            {filter.takeHomeParity ? '✓ Net Take-Home (TRAIN)' : 'Gross Monthly Base'}
+            {filter.takeHomeParity ? '✓ Net Take-Home' : 'Gross Monthly Base'}
           </button>
 
-          <span className="font-mono text-xs text-muted-foreground ml-2">
-            {filteredCount.toLocaleString()} / {totalCount.toLocaleString()} records
-          </span>
+          <Badge variant="secondary" className="font-mono text-[11px] ml-1">
+            {filteredCount.toLocaleString()} / {totalCount.toLocaleString()} rows
+          </Badge>
         </div>
       </div>
     </div>

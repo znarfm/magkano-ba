@@ -2,6 +2,33 @@
 
 import React, { useState } from 'react';
 import { calculateNetArbitrage } from '@/lib/economics';
+import { prepareStackedArbitrageData } from '@/lib/chart-adapters';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
+import { Slider } from '@/components/ui/slider';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 
 export function NetArbitrageSimulator() {
   const [localGross, setLocalGross] = useState<number>(60000);
@@ -16,135 +43,160 @@ export function NetArbitrageSimulator() {
     hmoAnnual || 0
   );
 
+  const stackedData = prepareStackedArbitrageData(result);
+
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
-      <div className="border-b border-border/60 pb-3">
-        <h2 className="text-lg font-semibold tracking-tight">
-          PH Local vs. Foreign Remote Net Arbitrage Simulator
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          Compute true take-home parity: PH corporate (graduated TRAIN tax + SSS/PhilHealth/Pag-IBIG + 13th month + HMO) vs. Foreign contractor (8% flat tax).
-        </p>
-      </div>
+    <Card className="shadow-xs">
+      <CardHeader className="pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-base">
+            PH Local vs. Foreign Remote Net Arbitrage Simulator
+          </CardTitle>
+          <Badge variant="secondary" className="font-mono text-xs">
+            2026 TRAIN vs. 8% Freelance Tax
+          </Badge>
+        </div>
+        <CardDescription className="text-xs">
+          Interactive break-even calculator: find the exact foreign contractor rate needed to match your PH corporate package.
+        </CardDescription>
+      </CardHeader>
 
-      <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Controls */}
-        <div className="space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
-          <div>
-            <label className="text-xs font-medium text-foreground">
-              PH Local Monthly Base Salary (PHP)
-            </label>
-            <div className="mt-1 flex items-center">
-              <span className="inline-flex h-9 items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
-                ₱
+      <CardContent className="space-y-4 pt-1">
+        {/* Controls Grid */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 rounded-lg border border-border/70 bg-muted/20 p-3.5">
+          {/* Base Salary Slider */}
+          <div className="space-y-2 sm:col-span-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium text-foreground">
+                PH Local Monthly Base Salary:
               </span>
-              <input
-                type="number"
-                step="5000"
-                min="10000"
-                max="1000000"
-                value={localGross}
-                onChange={(e) => setLocalGross(parseFloat(e.target.value) || 0)}
-                className="h-9 w-full rounded-r-md border border-input bg-background px-3 font-mono text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
-              />
+              <span className="font-mono text-sm font-bold text-foreground">
+                ₱{localGross.toLocaleString()}/mo
+              </span>
+            </div>
+            <Slider
+              value={[localGross]}
+              onValueChange={(val) => {
+                if (Array.isArray(val) && val.length > 0) {
+                  setLocalGross(val[0]);
+                }
+              }}
+              min={15000}
+              max={300000}
+              step={5000}
+              className="py-1"
+            />
+            <div className="flex justify-between font-mono text-[10px] text-muted-foreground">
+              <span>₱15k</span>
+              <span>₱100k</span>
+              <span>₱200k</span>
+              <span>₱300k</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-foreground">
-                Guaranteed Months
-              </label>
-              <select
-                value={guaranteedMonths}
-                onChange={(e) => setGuaranteedMonths(parseInt(e.target.value, 10))}
-                className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2.5 text-xs font-medium focus:outline-hidden focus:ring-1 focus:ring-primary"
-              >
-                <option value={12}>12 Months (No 13th)</option>
-                <option value={13}>13 Months (Standard)</option>
-                <option value={14}>14 Months</option>
-                <option value={15}>15 Months</option>
-                <option value={16}>16 Months (Bank/FMCG)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-foreground">
-                Monthly Allowance (PHP)
-              </label>
-              <input
-                type="number"
-                step="500"
-                min="0"
-                value={allowance}
-                onChange={(e) => setAllowance(parseFloat(e.target.value) || 0)}
-                className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2.5 font-mono text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
-              />
-            </div>
-          </div>
-
+          {/* Guaranteed Months */}
           <div>
-            <label className="text-xs font-medium text-foreground">
-              Annual HMO Valuation (PHP)
+            <label className="text-xs font-medium text-foreground block mb-1">
+              Guaranteed Months
+            </label>
+            <Select
+              value={String(guaranteedMonths)}
+              onValueChange={(v) => v && setGuaranteedMonths(parseInt(v, 10))}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="12" className="text-xs">12 Mos (No 13th Month)</SelectItem>
+                <SelectItem value="13" className="text-xs">13 Mos (PH Legal Standard)</SelectItem>
+                <SelectItem value="14" className="text-xs">14 Mos</SelectItem>
+                <SelectItem value="15" className="text-xs">15 Mos</SelectItem>
+                <SelectItem value="16" className="text-xs">16 Mos (Top Tier Bank/FMCG)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Allowance */}
+          <div>
+            <label className="text-xs font-medium text-foreground block mb-1">
+              Monthly De Minimis Allowance
             </label>
             <input
               type="number"
-              step="5000"
+              step="500"
               min="0"
-              value={hmoAnnual}
-              onChange={(e) => setHmoAnnual(parseFloat(e.target.value) || 0)}
-              className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2.5 font-mono text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+              value={allowance}
+              onChange={(e) => setAllowance(parseFloat(e.target.value) || 0)}
+              className="h-8 w-full rounded-md border border-input bg-background px-2.5 font-mono text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
             />
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Typical private corporate HMO coverage is valued at ~₱20,000–₱35,000/year.
-            </p>
           </div>
         </div>
 
-        {/* Parity Output */}
-        <div className="flex flex-col justify-between rounded-lg border border-border/80 bg-background p-4 shadow-xs">
+        {/* Break-Even Rate Card */}
+        <div className="rounded-lg border border-blue-500/30 bg-blue-50/50 dark:bg-blue-950/20 p-3.5 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Break-Even Foreign Remote Rate
+            <span className="text-xs uppercase tracking-wider font-semibold text-blue-900 dark:text-blue-300">
+              Required Break-Even Remote Contract:
             </span>
-            <div className="mt-1 font-mono text-3xl font-extrabold text-blue-600 dark:text-blue-400">
+            <div className="mt-0.5 font-mono text-2xl font-extrabold text-blue-700 dark:text-blue-300">
               ₱{result.remoteBreakEvenMonthlyGross.toLocaleString()}
-              <span className="text-sm font-normal text-muted-foreground">/month</span>
+              <span className="text-xs font-normal text-muted-foreground">/month</span>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              To match your ₱{result.localMonthlyGross.toLocaleString()}/mo local total package take-home, a foreign remote client contract must pay at least this amount before the 8% contractor tax.
-            </p>
           </div>
-
-          <div className="mt-4 space-y-2 border-t border-border/60 pt-3 text-xs">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Local Net Take-Home (Monthly Eq.):</span>
-              <span className="font-mono font-bold text-foreground">
-                ₱{result.localMonthlyNetEquivalent.toLocaleString()}
-              </span>
+          <div className="text-right text-xs">
+            <div className="text-muted-foreground font-mono">
+              Net Take-Home: <strong>₱{result.localMonthlyNetEquivalent.toLocaleString()}/mo</strong>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Remote Net Take-Home (8% Tax):</span>
-              <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
-                ₱{result.remoteMonthlyNetEquivalent.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Annual Bonus & Benefits Value:</span>
-              <span className="font-mono font-medium text-foreground">
-                ₱{result.benefitsAnnualLocal.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Annual Tax Difference (TRAIN vs 8%):</span>
-              <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">
-                ₱{Math.abs(result.taxDifferenceAnnual).toLocaleString()}{' '}
-                {result.taxDifferenceAnnual >= 0 ? '(Higher on Local)' : '(Higher on Remote)'}
-              </span>
+            <div className="text-[11px] text-muted-foreground font-mono">
+              Annual Benefits & Bonuses: ₱{result.benefitsAnnualLocal.toLocaleString()}
             </div>
           </div>
         </div>
-      </div>
-    </div>
+
+        {/* Stacked Breakdown Chart */}
+        <div className="space-y-1">
+          <span className="text-xs font-medium text-foreground">
+            Monthly Package Component Breakdown (Take-Home vs. Taxes & Benefits)
+          </span>
+          <div className="h-[140px] w-full pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={stackedData}
+                layout="vertical"
+                margin={{ top: 5, right: 20, left: 20, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" opacity={0.5} />
+                <XAxis
+                  type="number"
+                  stroke="var(--muted-foreground)"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val: number) => `₱${(val / 1000).toFixed(0)}k`}
+                />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  stroke="var(--muted-foreground)"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  width={110}
+                />
+                <Tooltip
+                  formatter={(val: any) => (typeof val === 'number' ? `₱${val.toLocaleString()}` : String(val ?? 0))}
+                  contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', fontSize: '11px', borderRadius: '8px' }}
+                />
+                <Legend iconSize={8} wrapperStyle={{ fontSize: '10px' }} />
+                <Bar dataKey="netTakeHome" name="Net Take-Home" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="tax" name="Income Tax" stackId="a" fill="#ef4444" />
+                <Bar dataKey="statutory" name="Mandatory Deductions" stackId="a" fill="#f59e0b" />
+                <Bar dataKey="benefits" name="Annual Benefits Value" stackId="a" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

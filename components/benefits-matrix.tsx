@@ -1,7 +1,26 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { MacroIndustry } from '@/lib/types';
+import { prepareBenefitsMatrixData, IndustryBenefitsPoint } from '@/lib/chart-adapters';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 
 interface BenefitsMatrixProps {
   matrix: Record<
@@ -15,82 +34,166 @@ interface BenefitsMatrixProps {
   >;
 }
 
-const INDUSTRY_NAMES: Record<MacroIndustry, string> = {
-  TECH_IT: 'Tech & IT',
-  FINANCE_BANKING: 'Finance & Banking',
-  FMCG_RETAIL: 'FMCG & Retail',
-  BPO_SHARED_SERVICES: 'BPO & Shared Services',
-  ENGINEERING_CONSTRUCTION: 'Engineering & Construction',
-  MEDIA_ADVERTISING: 'Media & Advertising',
-  GOVERNMENT_PUBLIC_SECTOR: 'Government & Public',
-  EDUCATION_ACADEME: 'Education & Academe',
-  HEALTHCARE_PHARMA: 'Healthcare & Pharma',
-  CONSULTING_MARKET_RESEARCH: 'Consulting & Market Research',
-  MANUFACTURING_LOGISTICS: 'Manufacturing & Logistics',
-  OTHER: 'General Business & Other',
-};
-
 export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
-  const industries = Object.keys(matrix) as MacroIndustry[];
+  const chartData = prepareBenefitsMatrixData(matrix);
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
-      <div className="border-b border-border/60 pb-3">
-        <h2 className="text-lg font-semibold tracking-tight">
-          Total Comp & Benefits Structure by Macro Industry
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          Industry benchmarks for bonus months (13th–16th), monthly allowances, and annual vacation/sick leave credits.
-        </p>
-      </div>
+    <Card className="shadow-xs">
+      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 pb-2">
+        <div>
+          <CardTitle className="text-base">
+            Total Comp & Benefits Structure by Macro Industry
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Guaranteed bonus months (13th–16th month), monthly de minimis allowances, and annual leave averages.
+          </CardDescription>
+        </div>
+        <div className="flex items-center gap-1.5 rounded-lg border border-border/80 bg-muted/40 p-1">
+          <button
+            type="button"
+            onClick={() => setViewMode('chart')}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+              viewMode === 'chart'
+                ? 'bg-primary text-primary-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Visual Ranking
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('table')}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+              viewMode === 'table'
+                ? 'bg-primary text-primary-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Detailed Table
+          </button>
+        </div>
+      </CardHeader>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="border-b border-border/70 text-muted-foreground font-semibold">
-              <th className="py-2.5 pr-4">Macro Industry</th>
-              <th className="py-2.5 px-3 text-center">Guaranteed Months</th>
-              <th className="py-2.5 px-3 text-right">Median Monthly Allowance</th>
-              <th className="py-2.5 px-3 text-center">Typical Leave Days</th>
-              <th className="py-2.5 pl-3 text-right">Sample (n)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/40 font-mono">
-            {industries.map((ind) => {
-              const row = matrix[ind];
-              return (
-                <tr key={ind} className="hover:bg-muted/30 transition-colors">
-                  <td className="py-2.5 pr-4 font-sans font-medium text-foreground">
-                    {INDUSTRY_NAMES[ind]}
-                  </td>
-                  <td className="py-2.5 px-3 text-center">
-                    <span
-                      className={`inline-block rounded-sm px-2 py-0.5 text-xs font-bold ${
-                        row.medianGuaranteedMonths >= 14
-                          ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300'
-                          : 'bg-muted text-foreground'
-                      }`}
-                    >
-                      {row.medianGuaranteedMonths} mos
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 text-right font-medium">
-                    {row.medianAllowancePhp > 0
-                      ? `₱${row.medianAllowancePhp.toLocaleString()}`
-                      : 'None / Included'}
-                  </td>
-                  <td className="py-2.5 px-3 text-center">
-                    {row.avgLeaveDays} days
-                  </td>
-                  <td className="py-2.5 pl-3 text-right text-muted-foreground">
-                    {row.sampleCount}
-                  </td>
+      <CardContent className="pt-2">
+        {viewMode === 'chart' ? (
+          <div className="h-[280px] w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{ top: 10, right: 20, left: 0, bottom: 25 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                <XAxis
+                  dataKey="industry"
+                  stroke="var(--muted-foreground)"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  angle={-25}
+                  textAnchor="end"
+                  interval={0}
+                />
+                <YAxis
+                  yAxisId="left"
+                  domain={[12, 16]}
+                  stroke="var(--muted-foreground)"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val: number) => `${val} mos`}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  stroke="var(--muted-foreground)"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val: number) => `₱${(val / 1000).toFixed(0)}k`}
+                />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload || !payload.length) return null;
+                    const pt = payload[0].payload as IndustryBenefitsPoint;
+                    return (
+                      <div className="rounded-lg border border-border bg-card p-3 shadow-md text-xs space-y-1">
+                        <div className="font-semibold text-foreground">{pt.industry}</div>
+                        <div className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                          Guaranteed: {pt.guaranteedMonths} Months Pay
+                        </div>
+                        <div className="font-mono text-blue-600 dark:text-blue-400 font-medium">
+                          Allowance: {pt.allowancePhp > 0 ? `₱${pt.allowancePhp.toLocaleString()}/mo` : 'None'}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-mono">
+                          Vacation Leaves: {pt.leaveDays} days · Sample: n={pt.sampleCount}
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                <Bar
+                  yAxisId="left"
+                  dataKey="guaranteedMonths"
+                  name="Guaranteed Months"
+                  fill="var(--color-primary)"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={28}
+                />
+                <Bar
+                  yAxisId="right"
+                  dataKey="allowancePhp"
+                  name="Monthly Allowance (₱)"
+                  fill="#3b82f6"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={28}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-border/70 text-muted-foreground font-semibold">
+                  <th className="py-2.5 pr-4">Macro Industry</th>
+                  <th className="py-2.5 px-3 text-center">Guaranteed Months</th>
+                  <th className="py-2.5 px-3 text-right">Median Allowance</th>
+                  <th className="py-2.5 px-3 text-center">Avg Leaves</th>
+                  <th className="py-2.5 pl-3 text-right">Sample (n)</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+              </thead>
+              <tbody className="divide-y divide-border/40 font-mono">
+                {chartData.map((row) => (
+                  <tr key={row.industryKey} className="hover:bg-muted/30 transition-colors">
+                    <td className="py-2.5 pr-4 font-sans font-medium text-foreground">
+                      {row.industry}
+                    </td>
+                    <td className="py-2.5 px-3 text-center">
+                      <Badge
+                        variant={row.guaranteedMonths >= 14 ? 'default' : 'secondary'}
+                        className="font-mono text-[11px]"
+                      >
+                        {row.guaranteedMonths} mos
+                      </Badge>
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-medium">
+                      {row.allowancePhp > 0 ? `₱${row.allowancePhp.toLocaleString()}` : '—'}
+                    </td>
+                    <td className="py-2.5 px-3 text-center">
+                      {row.leaveDays} days
+                    </td>
+                    <td className="py-2.5 pl-3 text-right text-muted-foreground">
+                      {row.sampleCount}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

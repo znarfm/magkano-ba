@@ -1,6 +1,25 @@
 'use client';
 
 import React from 'react';
+import { prepareNegotiationChartData, NegotiationPoint } from '@/lib/chart-adapters';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Cell,
+} from 'recharts';
 
 interface NegotiationLiftProps {
   lift: {
@@ -14,75 +33,95 @@ interface NegotiationLiftProps {
 }
 
 export function NegotiationLift({ lift }: NegotiationLiftProps) {
+  const chartData = prepareNegotiationChartData(lift);
   const hasData = lift.negotiatedCount > 0 && lift.nonNegotiatedCount > 0;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
-      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/60 pb-3">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight">
-            Fresh Grad Negotiation Lift
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Monetary and percentage advantage of negotiating initial first-job offers (Liyab cohort).
-          </p>
+    <Card className="shadow-xs flex flex-col justify-between">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-base">Fresh Grad Negotiation Lift</CardTitle>
+          {hasData && (
+            <Badge
+              variant="outline"
+              className="border-emerald-500/40 bg-emerald-500/10 font-bold text-emerald-600 dark:text-emerald-400"
+            >
+              +{lift.liftPercent}% Median Lift
+            </Badge>
+          )}
         </div>
-        {hasData && (
-          <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-              lift.liftPercent >= 0
-                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            +{lift.liftPercent}% Median Lift
-          </span>
+        <CardDescription className="text-xs">
+          Starting salary comparison between fresh grads who negotiated vs. those who accepted initial offers.
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="space-y-3 pt-1">
+        {!hasData ? (
+          <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
+            Insufficient negotiation records in current filter slice.
+          </div>
+        ) : (
+          <>
+            <div className="h-[170px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                  <XAxis
+                    dataKey="category"
+                    stroke="var(--muted-foreground)"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="var(--muted-foreground)"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(val: number) => `₱${(val / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const pt = payload[0].payload as NegotiationPoint;
+                      return (
+                        <div className="rounded-lg border border-border bg-card p-2.5 shadow-md text-xs space-y-1">
+                          <div className="font-semibold text-foreground">{pt.category}</div>
+                          <div className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                            ₱{pt.median.toLocaleString()}/mo
+                          </div>
+                          <div className="text-[10px] text-muted-foreground font-mono">
+                            Sample Size: n = {pt.count}
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Bar dataKey="median" radius={[6, 6, 0, 0]} maxBarSize={48}>
+                    <Cell fill="#10b981" />
+                    <Cell fill="var(--color-primary)" opacity={0.65} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Stat Summary Box */}
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-emerald-950 dark:text-emerald-200">
+                  Expected Monthly Premium:
+                </span>
+                <span className="font-mono text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+                  +₱{Math.max(0, lift.liftPhp).toLocaleString()}
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                ≈ +₱{(Math.max(0, lift.liftPhp) * 13).toLocaleString()}/year annualized with 13th month.
+              </p>
+            </div>
+          </>
         )}
-      </div>
-
-      {!hasData ? (
-        <div className="py-6 text-center text-xs text-muted-foreground">
-          Insufficient negotiation comparisons for the selected filter slice.
-        </div>
-      ) : (
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {/* Negotiated Card */}
-          <div className="rounded-lg border border-border/70 bg-muted/20 p-4">
-            <span className="text-xs text-muted-foreground font-medium">Negotiated First Offer</span>
-            <div className="mt-1 font-mono text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              ₱{lift.negotiatedMedian.toLocaleString()}
-            </div>
-            <span className="font-mono text-[11px] text-muted-foreground">
-              Median starting pay (n = {lift.negotiatedCount})
-            </span>
-          </div>
-
-          {/* Non-negotiated Card */}
-          <div className="rounded-lg border border-border/70 bg-muted/20 p-4">
-            <span className="text-xs text-muted-foreground font-medium">Accepted Initial Offer</span>
-            <div className="mt-1 font-mono text-2xl font-bold text-foreground">
-              ₱{lift.nonNegotiatedMedian.toLocaleString()}
-            </div>
-            <span className="font-mono text-[11px] text-muted-foreground">
-              Median starting pay (n = {lift.nonNegotiatedCount})
-            </span>
-          </div>
-
-          {/* Lift Difference Card */}
-          <div className="rounded-lg border border-emerald-500/30 bg-emerald-50/50 p-4 dark:bg-emerald-950/20">
-            <span className="text-xs font-semibold text-emerald-900 dark:text-emerald-300">
-              Expected Monetary Premium
-            </span>
-            <div className="mt-1 font-mono text-2xl font-extrabold text-emerald-700 dark:text-emerald-300">
-              +₱{Math.max(0, lift.liftPhp).toLocaleString()}
-              <span className="text-sm font-normal text-emerald-800 dark:text-emerald-400">/mo</span>
-            </div>
-            <span className="text-[11px] text-emerald-700 dark:text-emerald-400">
-              ≈ ₱{(Math.max(0, lift.liftPhp) * 13).toLocaleString()}/year extra (including 13th month)
-            </span>
-          </div>
-        </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }

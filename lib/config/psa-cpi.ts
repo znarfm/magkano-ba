@@ -25,17 +25,17 @@ export const PSA_CPI_SERIES: Record<number, number> = {
   2024: 126.5,
   2025: 130.5,
   2026: 134.5,
-};
+}
 
-export const BASE_YEAR = 2026;
-export const BASE_CPI = PSA_CPI_SERIES[BASE_YEAR];
+export const BASE_YEAR = 2026
+export const BASE_CPI = PSA_CPI_SERIES[BASE_YEAR]
 
 /**
  * Returns inflation multiplier to scale nominal PHP from year `year` to 2026 purchasing power.
  * Prior to 2005 clamps to 2005. Years beyond 2026 clamp to 2026.
  */
 export function getCpiMultiplier(year: number): number {
-  const clampedYear = Math.max(2005, Math.min(2026, Math.floor(year)));
-  const cpi = PSA_CPI_SERIES[clampedYear] ?? BASE_CPI;
-  return BASE_CPI / cpi;
+  const clampedYear = Math.max(2005, Math.min(2026, Math.floor(year)))
+  const cpi = PSA_CPI_SERIES[clampedYear] ?? BASE_CPI
+  return BASE_CPI / cpi
 }

@@ -2,73 +2,113 @@
 
 import React from 'react';
 import { PercentileStats, SchoolTierGroup } from '@/lib/types';
+import { prepareSchoolConvergenceData, SchoolTierPoint } from '@/lib/chart-adapters';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts';
 
 interface SchoolConvergenceProps {
   bySchoolTier: Record<SchoolTierGroup, PercentileStats>;
   cpiAdjusted: boolean;
 }
 
-const TIER_LABELS: Record<SchoolTierGroup, string> = {
-  UP_SYSTEM: 'UP System (UPD, UPLB, UPM, UPV)',
-  ADMU_DLSU_UST: 'Ateneo / DLSU / UST',
-  STATE_UNIV_POLYTECHNIC: 'State Univ & Polytechnics (PUP, PLM, TUP)',
-  PRIVATE_METRO: 'Private Metro Manila (Mapua, FEU, Benilde, UE)',
-  PROVINCIAL_UNIV: 'Provincial Universities (SLU, USC, Silliman)',
-  UNKNOWN: 'Other / Unspecified',
-};
-
 export function SchoolConvergence({ bySchoolTier, cpiAdjusted }: SchoolConvergenceProps) {
-  const tiers = (Object.keys(TIER_LABELS) as SchoolTierGroup[]).filter(
-    (t) => t !== 'UNKNOWN' && bySchoolTier[t]?.count > 0
-  );
-
-  const maxMedian = Math.max(...tiers.map((t) => bySchoolTier[t]?.p50 || 0), 50000);
+  const chartData = prepareSchoolConvergenceData(bySchoolTier);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
-      <div className="border-b border-border/60 pb-3">
-        <h2 className="text-lg font-semibold tracking-tight">
-          Alma Mater Starting Pay & Experience Convergence
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          Compare median starting compensation across Philippine university cohorts ({cpiAdjusted ? '2026 CPI-Adjusted' : 'Nominal PHP'}).
-        </p>
-      </div>
+    <Card className="shadow-xs">
+      <CardHeader className="pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-base">
+            Alma Mater Starting Pay & Tier Benchmarks
+          </CardTitle>
+          <Badge variant="outline" className="font-mono text-xs">
+            {cpiAdjusted ? '2026 CPI-Adjusted' : 'Nominal PHP'}
+          </Badge>
+        </div>
+        <CardDescription className="text-xs">
+          Median starting compensation and interquartile ranges across Philippine university cohorts.
+        </CardDescription>
+      </CardHeader>
 
-      <div className="mt-4 space-y-4">
-        {tiers.map((tier) => {
-          const stats = bySchoolTier[tier];
-          const pct = Math.min(100, Math.round((stats.p50 / maxMedian) * 100));
-
-          return (
-            <div key={tier} className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-foreground">{TIER_LABELS[tier]}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">
-                    (n = {stats.count})
-                  </span>
-                </div>
-                <div className="font-mono font-bold text-foreground">
-                  ₱{stats.p50.toLocaleString()}/mo
-                </div>
-              </div>
-
-              <div className="relative h-4 w-full rounded-sm bg-muted/40 p-0.5">
-                <div
-                  className="h-full rounded-xs bg-primary/80 transition-all duration-300"
-                  style={{ width: `${pct}%` }}
+      <CardContent className="pt-1">
+        {chartData.length === 0 ? (
+          <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
+            No school cohort data available in current filter.
+          </div>
+        ) : (
+          <div className="h-[200px] w-full pt-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                layout="vertical"
+                margin={{ top: 5, right: 20, left: 20, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" opacity={0.5} />
+                <XAxis
+                  type="number"
+                  stroke="var(--muted-foreground)"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val: number) => `₱${(val / 1000).toFixed(0)}k`}
                 />
-              </div>
-
-              <div className="flex justify-between font-mono text-[10px] text-muted-foreground">
-                <span>P25: ₱{stats.p25.toLocaleString()}</span>
-                <span>P75: ₱{stats.p75.toLocaleString()}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+                <YAxis
+                  dataKey="label"
+                  type="category"
+                  stroke="var(--muted-foreground)"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  width={130}
+                />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload || !payload.length) return null;
+                    const pt = payload[0].payload as SchoolTierPoint;
+                    return (
+                      <div className="rounded-lg border border-border bg-card p-2.5 shadow-md text-xs space-y-1">
+                        <div className="font-semibold text-foreground">{pt.label}</div>
+                        <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          Median: ₱{pt.median.toLocaleString()}/mo
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground font-mono">
+                          <span>P25: ₱{pt.p25.toLocaleString()}</span>
+                          <span>P75: ₱{pt.p75.toLocaleString()}</span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-mono border-t border-border/40 pt-1">
+                          Sample Size: n = {pt.count}
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+                <Bar
+                  dataKey="median"
+                  name="Median Monthly Pay"
+                  fill="var(--color-primary)"
+                  radius={[0, 6, 6, 0]}
+                  maxBarSize={22}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

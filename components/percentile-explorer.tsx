@@ -2,6 +2,25 @@
 
 import React from 'react';
 import { PercentileStats, SeniorityBand } from '@/lib/types';
+import { prepareSeniorityCurveData, SeniorityCurvePoint } from '@/lib/chart-adapters';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts';
 
 interface PercentileExplorerProps {
   stats: PercentileStats;
@@ -10,139 +29,152 @@ interface PercentileExplorerProps {
   takeHomeParity: boolean;
 }
 
-const BAND_LABELS: Record<SeniorityBand, { name: string; yoe: string }> = {
-  ENTRY_0: { name: 'Entry Level', yoe: '0 YOE' },
-  JUNIOR_1_2: { name: 'Junior', yoe: '1–2 YOE' },
-  MID_3_5: { name: 'Mid-Level', yoe: '3–5 YOE' },
-  SENIOR_6_9: { name: 'Senior', yoe: '6–9 YOE' },
-  STAFF_LEAD_10_PLUS: { name: 'Staff / Lead', yoe: '10+ YOE' },
-};
-
 export function PercentileExplorer({
   stats,
   bySeniority,
   cpiAdjusted,
   takeHomeParity,
 }: PercentileExplorerProps) {
-  // Find global max to scale relative progress bars
-  const maxVal = Math.max(
-    ...Object.values(bySeniority).map((s) => s.p75),
-    stats.p75,
-    100000
-  );
+  const chartData = prepareSeniorityCurveData(bySeniority);
+  const lowSampleBands = chartData.filter((d) => d.isLowSample);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
-      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/60 pb-3">
+    <Card className="shadow-xs">
+      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 pb-2">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">
-            Role & Industry Compensation Curves
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            P25, Median (P50), and P75 progression across seniority bands. (
-            {cpiAdjusted ? '2026 PSA CPI Purchasing Power' : 'Nominal Rates'} ·{' '}
-            {takeHomeParity ? 'Estimated Monthly Net' : 'Monthly Gross Base'})
-          </p>
+          <CardTitle className="text-lg">Career Compensation Curves</CardTitle>
+          <CardDescription className="text-xs">
+            Interquartile spread (P25 floor to P75 upper quartile) with Median progression across experience bands.
+            ({cpiAdjusted ? '2026 PSA CPI Adjusted' : 'Nominal Rates'} ·{' '}
+            {takeHomeParity ? 'Monthly Net Take-Home' : 'Gross Monthly Base'})
+          </CardDescription>
         </div>
-        <div className="flex items-center gap-3 font-mono text-xs">
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-2 rounded-full bg-blue-500" /> P25 (Floor)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> Median (P50)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-2 rounded-full bg-amber-500" /> P75 (Top Quartile)
-          </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="text-xs font-mono border-blue-500/40 text-blue-600 dark:text-blue-400">
+            ● P25 Floor
+          </Badge>
+          <Badge variant="outline" className="text-xs font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+            ● Median (P50)
+          </Badge>
+          <Badge variant="outline" className="text-xs font-mono border-amber-500/40 text-amber-600 dark:text-amber-400">
+            ● P75 Top Quartile
+          </Badge>
         </div>
-      </div>
+      </CardHeader>
 
-      {/* Seniority Progression Bars */}
-      <div className="mt-4 space-y-4">
-        {(Object.keys(BAND_LABELS) as SeniorityBand[]).map((band) => {
-          const s = bySeniority[band];
-          const info = BAND_LABELS[band];
-          const isLowSample = s.count > 0 && s.count < 5;
+      <CardContent className="pt-2">
+        {lowSampleBands.length > 0 && (
+          <div className="mb-3 flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-300">
+            <span>⚠️ Low sample size (&lt;5 records) in:</span>
+            {lowSampleBands.map((b) => (
+              <Badge key={b.bandKey} variant="secondary" className="text-[10px] py-0 px-1.5">
+                {b.label} (n={b.count})
+              </Badge>
+            ))}
+          </div>
+        )}
 
-          if (s.count === 0) {
-            return (
-              <div
-                key={band}
-                className="flex items-center justify-between rounded-lg border border-dashed border-border/60 p-3 text-xs text-muted-foreground"
-              >
-                <span>
-                  <strong className="text-foreground">{info.name}</strong> ({info.yoe})
-                </span>
-                <span>No matching data points in current filter</span>
-              </div>
-            );
-          }
-
-          const p25Pct = Math.min(100, Math.round((s.p25 / maxVal) * 100));
-          const p50Pct = Math.min(100, Math.round((s.p50 / maxVal) * 100));
-          const p75Pct = Math.min(100, Math.round((s.p75 / maxVal) * 100));
-
-          return (
-            <div key={band} className="space-y-1.5">
-              <div className="flex flex-wrap items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-foreground">{info.name}</span>
-                  <span className="text-muted-foreground">({info.yoe})</span>
-                  <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-                    n = {s.count}
-                  </span>
-                  {isLowSample && (
-                    <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                      ⚠ Low Sample (&lt;5)
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 font-mono font-medium">
-                  <span className="text-muted-foreground">
-                    P25: ₱{s.p25.toLocaleString()}
-                  </span>
-                  <span className="text-foreground font-bold">
-                    Median: ₱{s.p50.toLocaleString()}
-                  </span>
-                  <span className="text-muted-foreground">
-                    P75: ₱{s.p75.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Progress Visualizer */}
-              <div className="relative h-6 w-full rounded-md bg-muted/40 p-1">
-                {/* Inter-quartile range span (P25 to P75) */}
-                <div
-                  className="absolute top-1 bottom-1 rounded bg-blue-100/70 dark:bg-blue-950/40"
-                  style={{
-                    left: `${p25Pct}%`,
-                    width: `${Math.max(2, p75Pct - p25Pct)}%`,
-                  }}
-                />
-                {/* P25 Marker */}
-                <div
-                  className="absolute top-1 bottom-1 w-1 rounded bg-blue-500"
-                  style={{ left: `${p25Pct}%` }}
-                  title={`P25: ₱${s.p25.toLocaleString()}`}
-                />
-                {/* Median Marker */}
-                <div
-                  className="absolute top-0.5 bottom-0.5 w-1.5 rounded bg-emerald-600 shadow-xs"
-                  style={{ left: `${p50Pct}%` }}
-                  title={`Median: ₱${s.p50.toLocaleString()}`}
-                />
-                {/* P75 Marker */}
-                <div
-                  className="absolute top-1 bottom-1 w-1 rounded bg-amber-500"
-                  style={{ left: `${p75Pct}%` }}
-                  title={`P75: ₱${s.p75.toLocaleString()}`}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+        <div className="h-[280px] w-full pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="iqrGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0.05} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+              <XAxis
+                dataKey="label"
+                stroke="var(--muted-foreground)"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="var(--muted-foreground)"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(val: number) => `₱${(val / 1000).toFixed(0)}k`}
+              />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload || !payload.length) return null;
+                  const pt = payload[0].payload as SeniorityCurvePoint;
+                  return (
+                    <div className="rounded-lg border border-border bg-card p-3 shadow-md text-xs space-y-1.5">
+                      <div className="font-semibold text-foreground flex items-center justify-between gap-3">
+                        <span>{pt.label}</span>
+                        <Badge variant="secondary" className="font-mono text-[10px]">
+                          n = {pt.count}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
+                        <div>
+                          <span className="text-blue-500 font-medium">P25:</span>
+                          <div className="text-foreground">₱{pt.p25.toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <span className="text-emerald-500 font-bold">Median:</span>
+                          <div className="text-foreground font-bold">₱{pt.p50.toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <span className="text-amber-500 font-medium">P75:</span>
+                          <div className="text-foreground">₱{pt.p75.toLocaleString()}</div>
+                        </div>
+                      </div>
+                      <div className="border-t border-border/50 pt-1 text-[10px] text-muted-foreground font-mono">
+                        IQR Spread: ₱{pt.iqrSpread.toLocaleString()}
+                      </div>
+                    </div>
+                  );
+                }}
+              />
+              {/* Shaded P25 to P75 range */}
+              <Area
+                type="monotone"
+                dataKey="p75"
+                stroke="transparent"
+                fill="url(#iqrGradient)"
+              />
+              <Area
+                type="monotone"
+                dataKey="p25"
+                stroke="transparent"
+                fill="var(--background)"
+              />
+              {/* P25 Line */}
+              <Line
+                type="monotone"
+                dataKey="p25"
+                stroke="#3b82f6"
+                strokeWidth={1.5}
+                strokeDasharray="4 4"
+                dot={{ r: 3, fill: '#3b82f6' }}
+              />
+              {/* Median Line */}
+              <Line
+                type="monotone"
+                dataKey="p50"
+                stroke="#10b981"
+                strokeWidth={3}
+                dot={{ r: 5, fill: '#10b981' }}
+                activeDot={{ r: 7 }}
+              />
+              {/* P75 Line */}
+              <Line
+                type="monotone"
+                dataKey="p75"
+                stroke="#f59e0b"
+                strokeWidth={1.5}
+                strokeDasharray="4 4"
+                dot={{ r: 3, fill: '#f59e0b' }}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

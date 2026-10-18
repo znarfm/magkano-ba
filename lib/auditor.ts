@@ -1,18 +1,18 @@
-import { PercentileStats, CareerRecord } from './types';
-import { ArbitrageComparison } from './economics';
+import { PercentileStats, CareerRecord } from "./types"
+import { ArbitrageComparison } from "./economics"
 
 export interface AuditProfile {
-  role: string;
-  yoe: number;
-  monthlyOfferPhp: number;
-  workScope: string;
-  school: string;
-  macroIndustry: string;
+  role: string
+  yoe: number
+  monthlyOfferPhp: number
+  workScope: string
+  school: string
+  macroIndustry: string
 }
 
 export interface GroundedPromptPayload {
-  systemPrompt: string;
-  userPrompt: string;
+  systemPrompt: string
+  userPrompt: string
 }
 
 /**
@@ -34,15 +34,15 @@ Format your response with clear headings:
 1. Executive Offer Benchmark & Quartile Assessment
 2. Net Take-Home & Benefits Parity (TRAIN vs. 8% Freelance)
 3. Direct Peer Wisdom & Relevant Career Notes
-4. Actionable Negotiation Recommendations`;
+4. Actionable Negotiation Recommendations`
 
   const quotesText = matchedQuotes
     .slice(0, 5)
     .map(
       (q, idx) =>
-        `[Peer Quote ${idx + 1}] Role: ${q.rawTitle} (${q.yoeYears} YOE) | School: ${q.schoolCanonical ?? 'N/A'}\n"${q.mentorAdviceQuote}"`
+        `[Peer Quote ${idx + 1}] Role: ${q.rawTitle} (${q.yoeYears} YOE) | School: ${q.schoolCanonical ?? "N/A"}\n"${q.mentorAdviceQuote}"`
     )
-    .join('\n\n');
+    .join("\n\n")
 
   const userPrompt = `Evaluate this job offer/profile using ONLY these verified Filipino dataset benchmarks:
 
@@ -51,7 +51,7 @@ USER PROFILE:
 - Experience: ${profile.yoe} YOE
 - Offered / Current Monthly Gross: ₱${profile.monthlyOfferPhp.toLocaleString()}
 - Work Scope: ${profile.workScope}
-- School: ${profile.school || 'Not specified'}
+- School: ${profile.school || "Not specified"}
 - Macro Industry: ${profile.macroIndustry}
 
 VERIFIED COHORT BENCHMARKS (2026 CPI-Adjusted):
@@ -67,11 +67,11 @@ TAX & TAKE-HOME PARITY COMPUTATION:
 - Annual Local Statutory & Benefits Value: ₱${arbitrage.benefitsAnnualLocal.toLocaleString()}
 
 MATCHED PEER QUOTES & MENTOR ADVICE:
-${quotesText || 'No direct text quotes available for this specific slice.'}
+${quotesText || "No direct text quotes available for this specific slice."}
 
-Please generate an objective, grounded audit for this user.`;
+Please generate an objective, grounded audit for this user.`
 
-  return { systemPrompt, userPrompt };
+  return { systemPrompt, userPrompt }
 }
 
 /**
@@ -83,18 +83,18 @@ export async function callGeminiAudit(
 ): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(
     apiKey
-  )}`;
+  )}`
 
   const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       system_instruction: {
         parts: [{ text: payload.systemPrompt }],
       },
       contents: [
         {
-          role: 'user',
+          role: "user",
           parts: [{ text: payload.userPrompt }],
         },
       ],
@@ -102,20 +102,21 @@ export async function callGeminiAudit(
         temperature: 0.2,
       },
     }),
-  });
+  })
 
   if (!res.ok) {
-    const errorData = await res.json().catch(() => null);
+    const errorData = await res.json().catch(() => null)
     throw new Error(
-      errorData?.error?.message || `Gemini API request failed with status ${res.status}`
-    );
+      errorData?.error?.message ||
+        `Gemini API request failed with status ${res.status}`
+    )
   }
 
-  const data = await res.json();
-  const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const data = await res.json()
+  const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text
   if (!candidateText) {
-    throw new Error('Gemini API returned an empty response.');
+    throw new Error("Gemini API returned an empty response.")
   }
 
-  return candidateText;
+  return candidateText
 }
