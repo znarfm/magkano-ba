@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist_Mono, Inter, Instrument_Sans } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -23,10 +23,60 @@ const fontMono = Geist_Mono({
   display: "swap",
 })
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://magkano-ba.vercel.app"
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  colorScheme: "dark light",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#171816" },
+  ],
+}
+
 export const metadata: Metadata = {
-  title: "Magkano Ba? | Filipino Career & Compensation Dashboard",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Magkano Ba? | Filipino Career & Compensation Dashboard",
+    template: "%s | Magkano Ba?",
+  },
   description:
-    "Community-grounded Philippine salary and career intelligence dashboard.",
+    "Community-grounded Philippine salary and career intelligence dashboard across 4,000+ verified submissions.",
+  keywords: [
+    "Philippine salary",
+    "compensation dashboard",
+    "phcareers",
+    "Liyab First Pay",
+    "salary benchmark Philippines",
+    "TRAIN law net pay",
+    "Philippine tech salaries",
+  ],
+  authors: [{ name: "Magkano Ba Community" }],
+  creator: "Magkano Ba",
+  publisher: "Magkano Ba",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_PH",
+    url: siteUrl,
+    siteName: "Magkano Ba?",
+    title: "Magkano Ba? | Filipino Career & Compensation Dashboard",
+    description:
+      "Community-grounded Philippine salary and career intelligence dashboard across 4,000+ verified submissions.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Magkano Ba? | Filipino Career & Compensation Dashboard",
+    description:
+      "Community-grounded Philippine salary and career intelligence dashboard across 4,000+ verified submissions.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: "/icon.svg",
   },
