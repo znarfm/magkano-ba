@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { formatPhp, formatPhpK } from "@/lib/utils"
 import {
   Select,
@@ -55,17 +56,20 @@ export function NetArbitrageSimulator() {
   const stackedData = prepareStackedArbitrageData(result)
 
   return (
-    <Card className="shadow-xs">
+    <Card className="border-border/70 bg-card/60 shadow-xs backdrop-blur-xs">
       <CardHeader className="pb-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-base">
+          <CardTitle className="text-base font-bold tracking-tight">
             PH Local vs. Foreign Remote Net Arbitrage Simulator
           </CardTitle>
-          <Badge variant="secondary" className="font-mono text-xs">
+          <Badge
+            variant="outline"
+            className="border-primary/30 bg-muted/50 font-mono text-xs text-muted-foreground"
+          >
             2026 TRAIN vs. 8% Freelance Tax
           </Badge>
         </div>
-        <CardDescription className="text-xs">
+        <CardDescription className="text-xs text-muted-foreground">
           Interactive break-even calculator: find the exact foreign contractor
           rate needed to match your PH corporate package.
         </CardDescription>
@@ -142,21 +146,21 @@ export function NetArbitrageSimulator() {
             <label className="mb-1 block text-xs font-medium text-foreground">
               Monthly De Minimis Allowance
             </label>
-            <input
+            <Input
               type="number"
               step="500"
               min="0"
               value={allowance}
               onChange={(e) => setAllowance(parseFloat(e.target.value) || 0)}
-              className="h-8 w-full rounded-md border border-input bg-background px-2.5 font-mono text-xs focus:ring-1 focus:ring-primary focus:outline-hidden"
+              className="h-8 font-mono text-xs"
             />
           </div>
         </div>
 
         {/* Break-Even Rate Card */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-500/30 bg-blue-50/50 p-3.5 dark:bg-blue-950/20">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-500/25 bg-blue-500/10 p-4">
           <div>
-            <span className="text-xs font-semibold tracking-wider text-blue-900 uppercase dark:text-blue-300">
+            <span className="text-[11px] font-semibold tracking-wider text-blue-900 uppercase dark:text-blue-300">
               Required Break-Even Remote Contract:
             </span>
             <div className="mt-0.5 font-mono text-2xl font-extrabold text-blue-700 dark:text-blue-300">
@@ -169,7 +173,9 @@ export function NetArbitrageSimulator() {
           <div className="text-right text-xs">
             <div className="font-mono text-muted-foreground">
               Net Take-Home:{" "}
-              <strong>{formatPhp(result.localMonthlyNetEquivalent)}/mo</strong>
+              <strong className="text-foreground">
+                {formatPhp(result.localMonthlyNetEquivalent)}/mo
+              </strong>
             </div>
             <div className="font-mono text-[11px] text-muted-foreground">
               Annual Benefits & Bonuses: {formatPhp(result.benefitsAnnualLocal)}
@@ -195,10 +201,10 @@ export function NetArbitrageSimulator() {
                 margin={{ top: 5, right: 20, left: 20, bottom: 0 }}
               >
                 <CartesianGrid
-                  strokeDasharray="3 3"
+                  strokeDasharray="4 4"
                   horizontal={false}
                   stroke="var(--border)"
-                  opacity={0.5}
+                  strokeOpacity={0.4}
                 />
                 <XAxis
                   type="number"
@@ -222,13 +228,14 @@ export function NetArbitrageSimulator() {
                     typeof val === "number" ? formatPhp(val) : String(val ?? 0)
                   }
                   contentStyle={{
-                    backgroundColor: "var(--card)",
+                    backgroundColor: "var(--popover)",
                     borderColor: "var(--border)",
                     fontSize: "11px",
-                    borderRadius: "8px",
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                   }}
                 />
-                <Legend iconSize={8} wrapperStyle={{ fontSize: "10px" }} />
+                <Legend iconSize={8} wrapperStyle={{ fontSize: "11px" }} />
                 <Bar
                   dataKey="netTakeHome"
                   name="Net Take-Home"

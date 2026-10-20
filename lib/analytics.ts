@@ -275,3 +275,254 @@ export function queryDashboardSlice(
     mentorQuotes,
   }
 }
+
+export interface GranularSchoolStat {
+  schoolCanonical: string
+  tierGroup: SchoolTierGroup
+  count: number
+  p25: number
+  median: number
+  p75: number
+  min: number
+  max: number
+}
+
+/**
+ * Aggregates career records by specific canonical university/school.
+ */
+export function queryGranularSchoolStats(
+  records: CareerRecord[],
+  options?: {
+    minCount?: number
+    cpiAdjusted?: boolean
+    takeHomeParity?: boolean
+  }
+): GranularSchoolStat[] {
+  const minCount = options?.minCount ?? 15
+  const cpiAdjusted = options?.cpiAdjusted ?? true
+  const takeHomeParity = options?.takeHomeParity ?? false
+
+  const grouped = new Map<
+    string,
+    { tierGroup: SchoolTierGroup; values: number[] }
+  >()
+
+  for (const r of records) {
+    if (!r.schoolCanonical || r.schoolCanonical.trim() === "" || r.schoolCanonical === "Unknown") {
+      continue
+    }
+    const val = computeCompensationView(r, { cpiAdjusted, takeHomeParity })
+    if (val <= 0) continue
+
+    const existing = grouped.get(r.schoolCanonical)
+    if (existing) {
+      existing.values.push(val)
+    } else {
+      grouped.set(r.schoolCanonical, {
+        tierGroup: r.schoolTierGroup,
+        values: [val],
+      })
+    }
+  }
+
+  const results: GranularSchoolStat[] = []
+  for (const [schoolCanonical, data] of grouped.entries()) {
+    if (data.values.length < minCount) continue
+    const stats = computePercentiles(data.values)
+    results.push({
+      schoolCanonical,
+      tierGroup: data.tierGroup,
+      count: stats.count,
+      p25: stats.p25,
+      median: stats.p50,
+      p75: stats.p75,
+      min: stats.min,
+      max: stats.max,
+    })
+  }
+
+  return results.sort((a, b) => b.median - a.median)
+}
+
+export interface TableQueryOptions {
+  searchQuery?: string
+  macroIndustry?: string
+  roleFamily?: string
+  seniorityBand?: string
+  schoolCanonical?: string
+  workScope?: string
+  sourceSheet?: string
+  cpiAdjusted?: boolean
+  sortBy?: "salary" | "cohortYear" | "yoeYears" | "rawTitle" | "schoolCanonical"
+  sortOrder?: "asc" | "desc"
+  page?: number
+  pageSize?: number
+}
+
+export interface TableQueryResult {
+  records: CareerRecord[]
+  totalFiltered: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+/**
+ * Filters, searches, sorts, and paginates raw career records for data table views.
+ */
+export function queryTableRecords(
+  records: CareerRecord[],
+  options?: TableQueryOptions
+): TableQueryResult {
+  const {
+    searchQuery = "",
+    macroIndustry = "ALL",
+    roleFamily = "ALL",
+    seniorityBand = "ALL",
+    schoolCanonical = "ALL",
+    workScope = "ALL",
+    sourceSheet = "ALL",
+    cpiAdjusted = false,
+    sortBy = "salary",
+    sortOrder = "desc",
+    page = 1,
+    pageSize = 25,
+  } = options ?? {}
+
+  const filtered = records.filter((r) => {
+    if (macroIndustry !== "ALL" && r.macroIndustry !== macroIndustry) {
+      return false
+    }
+    if (roleFamily !== "ALL" && r.roleFamily !== roleFamily) {
+      return false
+    }
+    if (seniorityBand !== "ALL" && r.seniorityBand !== seniorityBand) {
+      return false
+    }
+    if (schoolCanonical !== "ALL" && r.schoolCanonical !== schoolCanonical) {
+      return false
+    }
+    if (workScope !== "ALL" && r.workScope !== workScope) {
+      return false
+    }
+    if (sourceSheet !== "ALL" && r.sourceSheet !== sourceSheet) {
+      return false
+    }
+
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase()
+      const match =
+        r.rawTitle.toLowerCase().includes(q) ||
+        r.roleFamily.toLowerCase().includes(q) ||
+        (r.schoolCanonical && r.schoolCanonical.toLowerCase().includes(q)) ||
+        (r.mentorAdviceQuote && r.mentorAdviceQuote.toLowerCase().includes(q))
+      if (!match) return false
+    }
+
+    return true
+  })
+
+  // Sort
+  filtered.sort((a, b) => {
+    let diff = 0
+    if (sortBy === "salary") {
+      const valA = cpiAdjusted
+        ? computeCompensationView(a, { cpiAdjusted: true, takeHomeParity: false })
+        : a.nominalMonthlyGrossPhp.median
+      const valB = cpiAdjusted
+        ? computeCompensationView(b, { cpiAdjusted: true, takeHomeParity: false })
+        : b.nominalMonthlyGrossPhp.median
+      diff = valA - valB
+    } else if (sortBy === "cohortYear") {
+      diff = a.cohortYear - b.cohortYear
+    } else if (sortBy === "yoeYears") {
+      diff = a.yoeYears - b.yoeYears
+    } else if (sortBy === "rawTitle") {
+      diff = a.rawTitle.localeCompare(b.rawTitle)
+    } else if (sortBy === "schoolCanonical") {
+      diff = (a.schoolCanonical ?? "").localeCompare(b.schoolCanonical ?? "")
+    }
+    return sortOrder === "asc" ? diff : -diff
+  })
+
+  const totalFiltered = filtered.length
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize))
+  const currentPage = Math.min(Math.max(1, page), totalPages)
+  const offset = (currentPage - 1) * pageSize
+  const paginated = filtered.slice(offset, offset + pageSize)
+
+  return {
+    records: paginated,
+    totalFiltered,
+    page: currentPage,
+    pageSize,
+    totalPages,
+  }
+}
+
+function escapeCsvField(val: string | number | boolean | null | undefined): string {
+  if (val === null || val === undefined) return ""
+  const str = String(val)
+  if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+    return `"${str.replace(/"/g, '""')}"`
+  }
+  return str
+}
+
+/**
+ * Serializes an array of CareerRecords into RFC-4180 compliant CSV string.
+ */
+export function exportRecordsToCsv(records: CareerRecord[]): string {
+  const headers = [
+    "id",
+    "sourceSheet",
+    "cohortYear",
+    "macroIndustry",
+    "roleFamily",
+    "rawTitle",
+    "yoeYears",
+    "seniorityBand",
+    "workScope",
+    "nominalMonthlyGrossMin",
+    "nominalMonthlyGrossMedian",
+    "nominalMonthlyGrossMax",
+    "negotiatedOffer",
+    "schoolCanonical",
+    "schoolTierGroup",
+    "gender",
+    "guaranteedMonths",
+    "monthlyAllowancePhp",
+    "hmoCoveragePhp",
+    "vacationLeaveDays",
+    "rawBenefitsSummary",
+    "mentorAdviceQuote",
+  ]
+
+  const rows = records.map((r) => [
+    escapeCsvField(r.id),
+    escapeCsvField(r.sourceSheet),
+    escapeCsvField(r.cohortYear),
+    escapeCsvField(r.macroIndustry),
+    escapeCsvField(r.roleFamily),
+    escapeCsvField(r.rawTitle),
+    escapeCsvField(r.yoeYears),
+    escapeCsvField(r.seniorityBand),
+    escapeCsvField(r.workScope),
+    escapeCsvField(r.nominalMonthlyGrossPhp.min),
+    escapeCsvField(r.nominalMonthlyGrossPhp.median),
+    escapeCsvField(r.nominalMonthlyGrossPhp.max),
+    escapeCsvField(r.negotiatedOffer),
+    escapeCsvField(r.schoolCanonical),
+    escapeCsvField(r.schoolTierGroup),
+    escapeCsvField(r.gender),
+    escapeCsvField(r.benefits.guaranteedMonths),
+    escapeCsvField(r.benefits.monthlyAllowancePhp),
+    escapeCsvField(r.benefits.hmoCoveragePhp),
+    escapeCsvField(r.benefits.vacationLeaveDays),
+    escapeCsvField(r.benefits.rawBenefitsSummary),
+    escapeCsvField(r.mentorAdviceQuote),
+  ])
+
+  return [headers.join(","), ...rows.map((row) => row.join(","))].join("\n")
+}
+

@@ -37,18 +37,21 @@ export function MentorQuotesFeed({
   cpiAdjusted,
 }: MentorQuotesFeedProps) {
   return (
-    <Card className="shadow-xs">
+    <Card className="border-border/70 bg-card/60 shadow-xs backdrop-blur-xs">
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2 pb-2">
         <div>
-          <CardTitle className="text-base">
+          <CardTitle className="text-base font-bold tracking-tight">
             Insider Career Advice & Mentor Stories
           </CardTitle>
-          <CardDescription className="text-xs">
+          <CardDescription className="text-xs text-muted-foreground">
             Unfiltered workplace learnings, salary pitfalls, and progression
             advice from experienced Filipino practitioners.
           </CardDescription>
         </div>
-        <Badge variant="secondary" className="font-mono text-xs">
+        <Badge
+          variant="outline"
+          className="border-primary/30 bg-muted/50 font-mono text-xs text-muted-foreground"
+        >
           {quotes.length} Quotes Matched
         </Badge>
       </CardHeader>
@@ -60,7 +63,7 @@ export function MentorQuotesFeed({
             broader terms.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
             {quotes.map((q) => {
               const displaySalary = computeCompensationView(q, {
                 cpiAdjusted,
@@ -70,7 +73,7 @@ export function MentorQuotesFeed({
               return (
                 <div
                   key={q.id}
-                  className="relative flex flex-col justify-between rounded-lg border border-border/70 bg-muted/15 p-4 text-xs transition-colors hover:border-border"
+                  className="relative flex flex-col justify-between rounded-xl border border-border/70 bg-card/40 p-4 text-xs backdrop-blur-xs transition-all duration-150 hover:border-border hover:bg-card/80"
                 >
                   <div className="flex gap-2">
                     <IconQuote className="h-5 w-5 shrink-0 rotate-180 text-muted-foreground/60" />

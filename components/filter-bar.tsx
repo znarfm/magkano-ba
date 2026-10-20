@@ -14,8 +14,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { IconSearch } from "@tabler/icons-react"
+import { Input } from "@/components/ui/input"
+import {
+  IconSearch,
+  IconBuilding,
+  IconBriefcase,
+  IconReceipt2,
+  IconTrendingUp,
+  IconRotateClockwise,
+} from "@tabler/icons-react"
 
 interface FilterBarProps {
   filter: FilterState
@@ -25,7 +32,7 @@ interface FilterBarProps {
 }
 
 const INDUSTRIES: { label: string; value: MacroIndustry | "ALL" }[] = [
-  { label: "All Macro Industries", value: "ALL" },
+  { label: "All Industries", value: "ALL" },
   { label: "Tech & IT", value: "TECH_IT" },
   { label: "Finance & Banking", value: "FINANCE_BANKING" },
   { label: "FMCG & Retail", value: "FMCG_RETAIL" },
@@ -44,12 +51,12 @@ const INDUSTRIES: { label: string; value: MacroIndustry | "ALL" }[] = [
 ]
 
 const SENIORITIES: { label: string; value: SeniorityBand | "ALL" }[] = [
-  { label: "All Seniority Bands", value: "ALL" },
-  { label: "0 YOE (Entry Level)", value: "ENTRY_0" },
-  { label: "1–2 YOE (Junior)", value: "JUNIOR_1_2" },
-  { label: "3–5 YOE (Mid-Level)", value: "MID_3_5" },
-  { label: "6–9 YOE (Senior)", value: "SENIOR_6_9" },
-  { label: "10+ YOE (Staff / Lead)", value: "STAFF_LEAD_10_PLUS" },
+  { label: "All Experience Levels", value: "ALL" },
+  { label: "0 YOE · Entry Level", value: "ENTRY_0" },
+  { label: "1–2 YOE · Junior", value: "JUNIOR_1_2" },
+  { label: "3–5 YOE · Mid-Level", value: "MID_3_5" },
+  { label: "6–9 YOE · Senior", value: "SENIOR_6_9" },
+  { label: "10+ YOE · Staff / Lead", value: "STAFF_LEAD_10_PLUS" },
 ]
 
 const SCOPES: { label: string; value: WorkScope }[] = [
@@ -99,23 +106,45 @@ export function FilterBar({
     }
   }
 
+  const isFiltered =
+    Boolean(filter.searchQuery) ||
+    filter.macroIndustry !== "ALL" ||
+    filter.seniorityBand !== "ALL" ||
+    !filter.cpiAdjusted ||
+    filter.takeHomeParity ||
+    filter.workScopes.length !== 2
+
+  const resetFilters = () => {
+    onChange({
+      ...filter,
+      macroIndustry: "ALL",
+      roleFamily: "ALL",
+      seniorityBand: "ALL",
+      workScopes: ["PH_LOCAL", "FOREIGN_REMOTE"],
+      cpiAdjusted: true,
+      takeHomeParity: false,
+      schoolTier: "ALL",
+      searchQuery: "",
+    })
+  }
+
   return (
-    <div className="sticky top-0 z-30 border-b border-border/80 bg-background/95 px-4 py-3 shadow-xs backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+    <div className="sticky top-0 z-30 border-b border-border/80 bg-background/90 px-4 py-2.5 shadow-xs backdrop-blur-md">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2.5">
         {/* Search & Select Filters */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <IconSearch className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
+            <IconSearch className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
+            <Input
               type="text"
               placeholder="Search title, school, or skill..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="h-9 w-48 rounded-md border border-input bg-background pr-3 pl-8 text-xs placeholder:text-muted-foreground focus:ring-1 focus:ring-primary focus:outline-hidden sm:w-60"
+              className="h-8 w-44 bg-card/60 pr-3 pl-8 text-xs placeholder:text-muted-foreground sm:w-56"
             />
           </div>
 
-          <div className="w-48 sm:w-56">
+          <div className="w-44 sm:w-52">
             <Select
               items={INDUSTRIES}
               value={filter.macroIndustry || "ALL"}
@@ -126,8 +155,9 @@ export function FilterBar({
                 })
               }
             >
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="All Macro Industries" />
+              <SelectTrigger className="h-8 border-input bg-card/60 text-xs gap-1.5">
+                <IconBuilding className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <SelectValue placeholder="All Industries" />
               </SelectTrigger>
               <SelectContent>
                 {INDUSTRIES.map((ind) => (
@@ -143,7 +173,7 @@ export function FilterBar({
             </Select>
           </div>
 
-          <div className="w-44 sm:w-52">
+          <div className="w-40 sm:w-48">
             <Select
               items={SENIORITIES}
               value={filter.seniorityBand || "ALL"}
@@ -154,8 +184,9 @@ export function FilterBar({
                 })
               }
             >
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="All Seniority Bands" />
+              <SelectTrigger className="h-8 border-input bg-card/60 text-xs gap-1.5">
+                <IconBriefcase className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <SelectValue placeholder="All Experience Levels" />
               </SelectTrigger>
               <SelectContent>
                 {SENIORITIES.map((sen) => (
@@ -174,8 +205,8 @@ export function FilterBar({
 
         {/* Work Scope Badges & Analytical Toggles */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Work Scopes */}
-          <div className="flex items-center gap-1.5 rounded-lg border border-border/80 bg-muted/30 p-1">
+          {/* Work Scopes Segmented Group */}
+          <div className="flex items-center rounded-md border border-border/70 bg-muted/40 p-0.5">
             {SCOPES.map((sc) => {
               const active = filter.workScopes.includes(sc.value)
               return (
@@ -183,9 +214,9 @@ export function FilterBar({
                   key={sc.value}
                   type="button"
                   onClick={() => toggleScope(sc.value)}
-                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                  className={`rounded-sm px-2 py-1 text-[11px] font-medium transition-colors ${
                     active
-                      ? "bg-primary text-primary-foreground shadow-xs"
+                      ? "bg-background text-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -195,40 +226,60 @@ export function FilterBar({
             })}
           </div>
 
-          {/* CPI 2026 Toggle */}
-          <button
-            type="button"
-            onClick={() =>
-              onChange({ ...filter, cpiAdjusted: !filter.cpiAdjusted })
-            }
-            className={`rounded-md border px-2.5 py-1 text-xs font-semibold transition-all ${
-              filter.cpiAdjusted
-                ? "border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                : "border-border bg-background text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {filter.cpiAdjusted ? "✓ 2026 CPI Adjusted" : "Nominal Rates"}
-          </button>
+          {/* Analytical Segmented Group */}
+          <div className="flex items-center rounded-md border border-border/70 bg-muted/40 p-0.5">
+            <button
+              type="button"
+              title="Adjust compensation for 2026 inflation using PSA CPI index"
+              onClick={() =>
+                onChange({ ...filter, cpiAdjusted: !filter.cpiAdjusted })
+              }
+              className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[11px] font-medium transition-colors ${
+                filter.cpiAdjusted
+                  ? "bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <IconTrendingUp className="h-3 w-3" />
+              {filter.cpiAdjusted ? "2026 Inflation" : "Nominal"}
+            </button>
+            <button
+              type="button"
+              title="Estimate take-home pay after statutory deductions (SSS/PhilHealth/Pag-IBIG) and TRAIN taxes"
+              onClick={() =>
+                onChange({ ...filter, takeHomeParity: !filter.takeHomeParity })
+              }
+              className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[11px] font-medium transition-colors ${
+                filter.takeHomeParity
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <IconReceipt2 className="h-3 w-3" />
+              {filter.takeHomeParity ? "After Tax" : "Gross"}
+            </button>
+          </div>
 
-          {/* Net Parity Toggle */}
-          <button
-            type="button"
-            onClick={() =>
-              onChange({ ...filter, takeHomeParity: !filter.takeHomeParity })
-            }
-            className={`rounded-md border px-2.5 py-1 text-xs font-semibold transition-all ${
-              filter.takeHomeParity
-                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                : "border-border bg-background text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {filter.takeHomeParity ? "✓ Net Take-Home" : "Gross Monthly Base"}
-          </button>
+          {/* Reset Filters Action */}
+          {isFiltered && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-card/60 px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <IconRotateClockwise className="h-3 w-3" />
+              Reset
+            </button>
+          )}
 
-          <Badge variant="secondary" className="ml-1 font-mono text-[11px]">
-            {filteredCount.toLocaleString()} / {totalCount.toLocaleString()}{" "}
-            rows
-          </Badge>
+          {/* Filtered Record Count */}
+          <div className="rounded-md border border-border/60 bg-muted/30 px-2 py-1 font-mono text-[11px] text-muted-foreground">
+            <span className="font-semibold text-foreground">
+              {filteredCount.toLocaleString()}
+            </span>
+            {" / "}
+            <span>{totalCount.toLocaleString()} rows</span>
+          </div>
         </div>
       </div>
     </div>

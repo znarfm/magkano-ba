@@ -5,19 +5,21 @@ import dynamic from "next/dynamic"
 import { z } from "zod"
 import { CareerRecord, CareerRecordSchema, FilterState } from "@/lib/types"
 import { useLocalStorage } from "@/hooks/use-local-storage"
-import { queryDashboardSlice } from "@/lib/analytics"
+import { queryDashboardSlice, queryGranularSchoolStats } from "@/lib/analytics"
+import { prepareGranularSchoolData } from "@/lib/chart-adapters"
 import { FilterBar } from "@/components/filter-bar"
 import { PercentileExplorer } from "@/components/percentile-explorer"
 import { NegotiationLift } from "@/components/negotiation-lift"
+import { NavigationHeader } from "@/components/navigation-header"
 import { MethodologyModal } from "@/components/methodology-modal"
-import { AppIcon } from "@/components/icons/app-icon"
+import { KpiSummary } from "@/components/kpi-summary"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   IconChartLine,
   IconScale,
   IconSparkles,
-  IconMessage2,
   IconBuildingArch,
 } from "@tabler/icons-react"
 
@@ -45,11 +47,6 @@ const OfferAuditor = dynamic(
     import("@/components/auditor/offer-auditor").then(
       (mod) => mod.OfferAuditor
     ),
-  { ssr: false }
-)
-const MentorQuotesFeed = dynamic(
-  () =>
-    import("@/components/mentor-quotes").then((mod) => mod.MentorQuotesFeed),
   { ssr: false }
 )
 
@@ -99,36 +96,44 @@ export default function DashboardPage() {
     return queryDashboardSlice(records, filter)
   }, [records, filter])
 
+  const granularSchools = useMemo(() => {
+    const stats = queryGranularSchoolStats(records, {
+      cpiAdjusted: filter.cpiAdjusted,
+      takeHomeParity: filter.takeHomeParity,
+      minCount: 15,
+    })
+    return prepareGranularSchoolData(stats)
+  }, [records, filter.cpiAdjusted, filter.takeHomeParity])
+
   const [activeTab, setActiveTab] = useState("curves")
+
+  // Sync tab with URL query parameter on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search)
+      const tabParam = params.get("tab")
+      if (
+        tabParam &&
+        ["curves", "arbitrage", "schools", "auditor"].includes(tabParam)
+      ) {
+        setActiveTab(tabParam)
+      }
+    }
+  }, [])
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val)
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href)
+      url.searchParams.set("tab", val)
+      window.history.replaceState({}, "", url.toString())
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans text-foreground">
-      {/* Top Header */}
-      <header className="border-b border-border bg-card/60 px-4 py-4 backdrop-blur-xs">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2.5">
-              <AppIcon className="h-7 w-7 shrink-0 rounded-lg shadow-xs" />
-              <h1 className="text-xl font-bold tracking-tight">Magkano Ba?</h1>
-              <Badge
-                variant="outline"
-                className="border-primary/40 py-0 font-mono text-[11px] text-primary"
-              >
-                2026 PSA CPI Rebased
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Filipino Career & Compensation Intelligence · 4,000+ Verified
-              Community Records
-            </p>
-          </div>
-          <div className="hidden items-center gap-3 font-mono text-xs text-muted-foreground sm:flex">
-            <span>PSA CPI Index: 134.5</span>
-            <span>•</span>
-            <span>TRAIN 2026 Brackets</span>
-          </div>
-        </div>
-      </header>
+      {/* Top Header Navigation */}
+      <NavigationHeader />
 
       {/* Sticky Global Filter Bar */}
       <FilterBar
@@ -139,37 +144,46 @@ export default function DashboardPage() {
       />
 
       {/* Main Content Area */}
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-6">
         {loading ? (
-          <div className="flex h-64 flex-col items-center justify-center gap-2 font-mono text-xs text-muted-foreground">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <span>Loading 4,000+ normalized records...</span>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Skeleton className="h-24 w-full rounded-xl" />
+              <Skeleton className="h-24 w-full rounded-xl" />
+              <Skeleton className="h-24 w-full rounded-xl" />
+              <Skeleton className="h-24 w-full rounded-xl" />
+            </div>
+            <Skeleton className="h-8.5 w-80 rounded-lg" />
+            <Skeleton className="h-[360px] w-full rounded-xl" />
           </div>
         ) : (
-          <Tabs
-            value={activeTab}
-            onValueChange={(val) => val && setActiveTab(val)}
-            className="space-y-6"
-          >
-            <div className="overflow-x-auto pb-1">
-              <TabsList className="h-9 p-1">
-                <TabsTrigger value="curves" className="gap-1.5 px-3 text-xs">
-                  <IconChartLine className="h-3.5 w-3.5" /> Compensation Curves
+          <>
+            {/* Executive KPI Benchmark Strip */}
+            <KpiSummary
+              salaryStats={analytics.salaryStats}
+              negotiationLift={analytics.negotiationLift}
+              cpiAdjusted={filter.cpiAdjusted}
+              takeHomeParity={filter.takeHomeParity}
+            />
+
+            <Tabs
+              value={activeTab}
+              onValueChange={(val) => val && handleTabChange(val)}
+              className="space-y-6"
+            >
+            <div className="overflow-x-auto pb-0.5">
+              <TabsList className="h-8.5 rounded-lg border border-border/70 bg-muted/30 p-0.5">
+                <TabsTrigger value="curves" className="gap-1.5 px-3 text-xs font-medium">
+                  <IconChartLine className="h-3.5 w-3.5" /> Salary Ranges & Lift
                 </TabsTrigger>
-                <TabsTrigger value="arbitrage" className="gap-1.5 px-3 text-xs">
-                  <IconScale className="h-3.5 w-3.5" /> Net Arbitrage Simulator
+                <TabsTrigger value="arbitrage" className="gap-1.5 px-3 text-xs font-medium">
+                  <IconScale className="h-3.5 w-3.5" /> Remote vs Local Calculator
                 </TabsTrigger>
-                <TabsTrigger value="schools" className="gap-1.5 px-3 text-xs">
-                  <IconBuildingArch className="h-3.5 w-3.5" /> Schools &
-                  Benefits
+                <TabsTrigger value="schools" className="gap-1.5 px-3 text-xs font-medium">
+                  <IconBuildingArch className="h-3.5 w-3.5" /> University & Perks
                 </TabsTrigger>
-                <TabsTrigger value="auditor" className="gap-1.5 px-3 text-xs">
-                  <IconSparkles className="h-3.5 w-3.5 text-amber-500" /> BYOK
-                  Offer Auditor
-                </TabsTrigger>
-                <TabsTrigger value="quotes" className="gap-1.5 px-3 text-xs">
-                  <IconMessage2 className="h-3.5 w-3.5" /> Mentor Stories (
-                  {analytics.mentorQuotes.length})
+                <TabsTrigger value="auditor" className="gap-1.5 px-3 text-xs font-medium">
+                  <IconSparkles className="h-3.5 w-3.5 text-amber-500" /> AI Offer Evaluator
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -208,6 +222,7 @@ export default function DashboardPage() {
                 <div className="space-y-6">
                   <SchoolConvergence
                     bySchoolTier={analytics.bySchoolTier}
+                    granularSchools={granularSchools}
                     cpiAdjusted={filter.cpiAdjusted}
                   />
                   <BenefitsMatrix matrix={analytics.benefitsMatrix} />
@@ -227,17 +242,8 @@ export default function DashboardPage() {
                 </div>
               )}
             </TabsContent>
-
-            {/* TAB 5: Mentor Advice Stories */}
-            <TabsContent value="quotes" className="space-y-6">
-              {activeTab === "quotes" && (
-                <MentorQuotesFeed
-                  quotes={analytics.mentorQuotes}
-                  cpiAdjusted={filter.cpiAdjusted}
-                />
-              )}
-            </TabsContent>
           </Tabs>
+          </>
         )}
       </main>
 

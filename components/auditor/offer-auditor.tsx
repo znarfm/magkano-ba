@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -137,18 +138,21 @@ export function OfferAuditor({
   const tier = getOfferTier()
 
   return (
-    <Card className="shadow-xs">
+    <Card className="border-border/70 bg-card/60 shadow-xs backdrop-blur-xs">
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 pb-2">
         <div>
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base">
+            <CardTitle className="text-base font-bold tracking-tight">
               BYOK Gemini Grounded Offer & Path Auditor
             </CardTitle>
-            <Badge variant="outline" className="gap-1 font-mono text-[11px]">
+            <Badge
+              variant="outline"
+              className="gap-1 border-amber-500/30 bg-amber-500/10 font-mono text-[11px] text-amber-600 dark:text-amber-400"
+            >
               <IconSparkles className="h-3 w-3 text-amber-500" /> Grounded AI
             </Badge>
           </div>
-          <CardDescription className="text-xs">
+          <CardDescription className="text-xs text-muted-foreground">
             Audit your compensation package against verified dataset percentiles
             and TRAIN/8% tax math without hallucinations. Key never leaves your
             browser.
@@ -176,12 +180,12 @@ export function OfferAuditor({
             </span>
           </div>
           <div className="flex gap-2">
-            <input
+            <Input
               type="password"
               placeholder="AIzaSy..."
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              className="h-8 flex-1 rounded-md border border-input bg-background px-3 font-mono text-xs focus:ring-1 focus:ring-primary focus:outline-hidden"
+              className="h-8 flex-1 font-mono text-xs"
             />
             <a
               href="https://aistudio.google.com/app/apikey"
@@ -235,11 +239,11 @@ export function OfferAuditor({
             <label className="mb-1 block text-xs font-medium text-foreground">
               Target Role / Job Title
             </label>
-            <input
+            <Input
               type="text"
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs focus:ring-1 focus:ring-primary focus:outline-hidden"
+              className="h-8 text-xs"
               required
             />
           </div>
@@ -248,14 +252,14 @@ export function OfferAuditor({
             <label className="mb-1 block text-xs font-medium text-foreground">
               Years of Experience (YOE)
             </label>
-            <input
+            <Input
               type="number"
               min="0"
               max="40"
               step="0.5"
               value={yoe}
               onChange={(e) => setYoe(parseFloat(e.target.value) || 0)}
-              className="h-8 w-full rounded-md border border-input bg-background px-2.5 font-mono text-xs focus:ring-1 focus:ring-primary focus:outline-hidden"
+              className="h-8 font-mono text-xs"
               required
             />
           </div>
@@ -264,13 +268,13 @@ export function OfferAuditor({
             <label className="mb-1 block text-xs font-medium text-foreground">
               Offered Monthly Gross (PHP)
             </label>
-            <input
+            <Input
               type="number"
               min="10000"
               step="5000"
               value={monthlyOffer}
               onChange={(e) => setMonthlyOffer(parseFloat(e.target.value) || 0)}
-              className="h-8 w-full rounded-md border border-input bg-background px-2.5 font-mono text-xs focus:ring-1 focus:ring-primary focus:outline-hidden"
+              className="h-8 font-mono text-xs"
               required
             />
           </div>

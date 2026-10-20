@@ -5,6 +5,7 @@ import {
   prepareStackedArbitrageData,
   prepareSchoolConvergenceData,
   prepareBenefitsMatrixData,
+  prepareGranularSchoolData,
 } from "../lib/chart-adapters"
 import {
   PercentileStats,
@@ -263,5 +264,38 @@ describe("Chart Data Adapters", () => {
     expect(data.length).toBe(12)
     expect(data[0].industry).toBeDefined()
     expect(data[0].guaranteedMonths).toBeGreaterThanOrEqual(13)
+  })
+
+  it("formats granular school data with labels, median, IQR, and sample count", () => {
+    const mockGranular = [
+      {
+        schoolCanonical: "UP Diliman",
+        tierGroup: "UP_SYSTEM" as SchoolTierGroup,
+        count: 511,
+        p25: 30000,
+        median: 45000,
+        p75: 65000,
+        min: 20000,
+        max: 150000,
+      },
+      {
+        schoolCanonical: "PUP",
+        tierGroup: "STATE_UNIV_POLYTECHNIC" as SchoolTierGroup,
+        count: 190,
+        p25: 22000,
+        median: 30000,
+        p75: 42000,
+        min: 15000,
+        max: 90000,
+      },
+    ]
+
+    const data = prepareGranularSchoolData(mockGranular)
+    expect(data.length).toBe(2)
+    expect(data[0].school).toBe("UP Diliman")
+    expect(data[0].median).toBe(45000)
+    expect(data[0].count).toBe(511)
+    expect(data[0].iqrSpread).toBe(35000)
+    expect(data[1].school).toBe("PUP")
   })
 })

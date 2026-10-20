@@ -199,3 +199,36 @@ export function prepareBenefitsMatrixData(
         b.allowancePhp - a.allowancePhp
     )
 }
+
+export interface GranularSchoolPoint {
+  school: string
+  tierGroup: SchoolTierGroup
+  tierLabel: string
+  median: number
+  p25: number
+  p75: number
+  iqrSpread: number
+  count: number
+}
+
+export function prepareGranularSchoolData(
+  stats: {
+    schoolCanonical: string
+    tierGroup: SchoolTierGroup
+    count: number
+    p25: number
+    median: number
+    p75: number
+  }[]
+): GranularSchoolPoint[] {
+  return stats.map((s) => ({
+    school: s.schoolCanonical,
+    tierGroup: s.tierGroup,
+    tierLabel: TIER_LABELS[s.tierGroup] || s.tierGroup,
+    median: s.median,
+    p25: s.p25,
+    p75: s.p75,
+    iqrSpread: Math.max(0, s.p75 - s.p25),
+    count: s.count,
+  }))
+}
