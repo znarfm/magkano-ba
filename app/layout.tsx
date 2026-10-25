@@ -23,7 +23,7 @@ const fontMono = Geist_Mono({
   display: "swap",
 })
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://magkano-ba.vercel.app"
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://magkano-ba.meinard.dev"
 
 export const viewport: Viewport = {
   width: "device-width",
