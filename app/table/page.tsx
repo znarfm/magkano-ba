@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useMemo, useState } from "react"
+import React, { Suspense, useEffect, useMemo, useState } from "react"
 import {
   CareerRecord,
   MacroIndustry,
@@ -12,6 +12,7 @@ import {
   exportRecordsToCsv,
   TableQueryOptions,
 } from "@/lib/analytics"
+import { useTableFilterParams } from "@/hooks/use-table-filter-params"
 import { computeCompensationView } from "@/lib/economics"
 import { NavigationHeader } from "@/components/navigation-header"
 import {
@@ -81,20 +82,23 @@ const SOURCES = [
   { label: "r/phcareers (1,068)", value: "CAREER_PATH_INFO" },
 ]
 
-export default function TablePage() {
+function TableContent() {
   const [records, setRecords] = useState<CareerRecord[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Table Query States
-  const [searchQuery, setSearchQuery] = useState("")
-  const [industry, setIndustry] = useState("ALL")
-  const [seniority, setSeniority] = useState("ALL")
-  const [sourceSheet, setSourceSheet] = useState("ALL")
-  const [cpiAdjusted, setCpiAdjusted] = useState(false)
-  const [sortBy, setSortBy] = useState<TableQueryOptions["sortBy"]>("salary")
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(25)
+  // URL-synchronized Query State
+  const [params, setParams] = useTableFilterParams()
+  const {
+    searchQuery,
+    macroIndustry: industry,
+    seniorityBand: seniority,
+    sourceSheet,
+    cpiAdjusted,
+    sortBy,
+    sortOrder,
+    page,
+    pageSize,
+  } = params
 
   // Expandable row state
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
@@ -112,10 +116,8 @@ export default function TablePage() {
       })
   }, [])
 
-  // Reset page when filters change
   const handleSearchChange = (val: string) => {
-    setSearchQuery(val)
-    setPage(1)
+    setParams({ searchQuery: val, page: 1 })
   }
 
   const queryResult = useMemo(() => {
@@ -145,12 +147,10 @@ export default function TablePage() {
 
   const toggleSort = (col: NonNullable<TableQueryOptions["sortBy"]>) => {
     if (sortBy === col) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+      setParams({ sortOrder: sortOrder === "asc" ? "desc" : "asc", page: 1 })
     } else {
-      setSortBy(col)
-      setSortOrder("desc")
+      setParams({ sortBy: col, sortOrder: "desc", page: 1 })
     }
-    setPage(1)
   }
 
   const handleDownloadCsv = () => {
@@ -226,8 +226,7 @@ export default function TablePage() {
               items={INDUSTRIES}
               value={industry}
               onValueChange={(val) => {
-                setIndustry(val || "ALL")
-                setPage(1)
+                setParams({ macroIndustry: val || "ALL", page: 1 })
               }}
             >
               <SelectTrigger className="h-8 text-xs bg-background">
@@ -248,8 +247,7 @@ export default function TablePage() {
               items={SENIORITIES}
               value={seniority}
               onValueChange={(val) => {
-                setSeniority(val || "ALL")
-                setPage(1)
+                setParams({ seniorityBand: val || "ALL", page: 1 })
               }}
             >
               <SelectTrigger className="h-8 text-xs bg-background">
@@ -270,8 +268,7 @@ export default function TablePage() {
               items={SOURCES}
               value={sourceSheet}
               onValueChange={(val) => {
-                setSourceSheet(val || "ALL")
-                setPage(1)
+                setParams({ sourceSheet: val || "ALL", page: 1 })
               }}
             >
               <SelectTrigger className="h-8 text-xs bg-background">
@@ -290,7 +287,7 @@ export default function TablePage() {
           {/* 2026 PSA CPI Inflation Toggle (Off by default) */}
           <button
             type="button"
-            onClick={() => setCpiAdjusted(!cpiAdjusted)}
+            onClick={() => setParams({ cpiAdjusted: !cpiAdjusted, page: 1 })}
             className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
               cpiAdjusted
                 ? "border-blue-500/30 bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold shadow-xs"
@@ -592,8 +589,7 @@ export default function TablePage() {
                 <select
                   value={pageSize}
                   onChange={(e) => {
-                    setPageSize(Number(e.target.value))
-                    setPage(1)
+                    setParams({ pageSize: Number(e.target.value), page: 1 })
                   }}
                   className="rounded border border-input bg-background px-1.5 py-0.5 text-xs text-foreground"
                 >
@@ -608,7 +604,7 @@ export default function TablePage() {
                   variant="outline"
                   size="sm"
                   disabled={page <= 1}
-                  onClick={() => setPage(page - 1)}
+                  onClick={() => setParams({ page: page - 1 })}
                   className="h-7 w-7 p-0"
                 >
                   <IconChevronLeft className="h-3.5 w-3.5" />
@@ -620,7 +616,7 @@ export default function TablePage() {
                   variant="outline"
                   size="sm"
                   disabled={page >= queryResult.totalPages}
-                  onClick={() => setPage(page + 1)}
+                  onClick={() => setParams({ page: page + 1 })}
                   className="h-7 w-7 p-0"
                 >
                   <IconChevronRight className="h-3.5 w-3.5" />
@@ -631,5 +627,13 @@ export default function TablePage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function TablePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <TableContent />
+    </Suspense>
   )
 }

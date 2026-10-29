@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { z } from "zod"
-import { CareerRecord, CareerRecordSchema, FilterState } from "@/lib/types"
-import { useLocalStorage } from "@/hooks/use-local-storage"
+import { CareerRecord, CareerRecordSchema } from "@/lib/types"
+import { useDashboardFilterParams } from "@/hooks/use-dashboard-filter-params"
 import { queryDashboardSlice, queryGranularSchoolStats } from "@/lib/analytics"
 import { prepareGranularSchoolData } from "@/lib/chart-adapters"
 import { FilterBar } from "@/components/filter-bar"
@@ -50,20 +50,11 @@ const OfferAuditor = dynamic(
   { ssr: false }
 )
 
-export default function DashboardPage() {
+function DashboardContent() {
   const [records, setRecords] = useState<CareerRecord[]>([])
   const [loading, setLoading] = useState<boolean>(true)
 
-  const [filter, setFilter] = useLocalStorage<FilterState>("mb_filters", {
-    macroIndustry: "ALL",
-    roleFamily: "ALL",
-    seniorityBand: "ALL",
-    workScopes: ["PH_LOCAL", "FOREIGN_REMOTE"],
-    cpiAdjusted: true,
-    takeHomeParity: false,
-    schoolTier: "ALL",
-    searchQuery: "",
-  })
+  const [filter, setFilter] = useDashboardFilterParams()
 
   useEffect(() => {
     fetch("/data/records.json")
@@ -280,5 +271,13 @@ export default function DashboardPage() {
         </div>
       </footer>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <DashboardContent />
+    </Suspense>
   )
 }
