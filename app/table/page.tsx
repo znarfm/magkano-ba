@@ -1,7 +1,7 @@
 "use client"
 
 import React, { Suspense, useEffect, useMemo, useState } from "react"
-import { CareerRecord } from "@/lib/types"
+import type { CareerRecord } from "@/lib/types"
 import {
   queryTableRecords,
   exportRecordsToCsv,
@@ -296,6 +296,7 @@ function TableContent() {
                   : "border-border bg-card text-muted-foreground hover:text-foreground"
               }`}
               title="Adjust pay to 2026 inflation using official PSA Consumer Price Index (134.5)"
+              aria-label="Toggle 2026 CPI inflation adjustment"
             >
               <IconTrendingUp className="size-3.5" />
               <span>{cpiAdjusted ? "2026 CPI" : "Nominal PHP"}</span>
@@ -536,6 +537,7 @@ function TableContent() {
                   disabled={page <= 1}
                   onClick={() => setParams({ page: page - 1 })}
                   className="size-7 p-0"
+                  aria-label="Previous page"
                 >
                   <IconChevronLeft className="size-3.5" />
                 </Button>
@@ -548,6 +550,7 @@ function TableContent() {
                   disabled={page >= queryResult.totalPages}
                   onClick={() => setParams({ page: page + 1 })}
                   className="size-7 p-0"
+                  aria-label="Next page"
                 >
                   <IconChevronRight className="size-3.5" />
                 </Button>

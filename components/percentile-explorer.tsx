@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { PercentileStats, SeniorityBand } from "@/lib/types"
+import type { PercentileStats, SeniorityBand } from "@/lib/types"
 import {
   prepareSeniorityCurveData,
   SeniorityCurvePoint,

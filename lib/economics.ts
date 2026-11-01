@@ -1,5 +1,5 @@
 import { getCpiMultiplier } from "./config/psa-cpi"
-import { CareerRecord } from "./types"
+import type { CareerRecord } from "./types"
 
 export interface StatutoryContributions {
   sss: number

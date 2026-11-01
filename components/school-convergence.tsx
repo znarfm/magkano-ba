@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { PercentileStats, SchoolTierGroup } from "@/lib/types"
+import type { PercentileStats, SchoolTierGroup } from "@/lib/types"
 import {
   prepareSchoolConvergenceData,
   GranularSchoolPoint,

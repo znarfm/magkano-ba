@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useMemo, useState } from "react"
-import {
+import type {
   PercentileStats,
   CareerRecord,
   WorkScope,
@@ -184,6 +184,7 @@ export function OfferAuditor({
               <Button
                 variant="outline"
                 size="sm"
+                aria-label={hasSavedKey ? "Gemini Key Saved" : "Set Gemini Key"}
                 className="h-8 gap-1.5 bg-background text-xs"
               />
             }

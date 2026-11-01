@@ -2,8 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
-import { z } from "zod"
-import { CareerRecord, CareerRecordSchema } from "@/lib/types"
+import type { CareerRecord } from "@/lib/types"
 import { useDashboardFilterParams } from "@/hooks/use-dashboard-filter-params"
 import {
   computeBenefitsMatrix,
@@ -12,13 +11,29 @@ import {
 } from "@/lib/analytics"
 import { prepareGranularSchoolData } from "@/lib/chart-adapters"
 import { FilterBar } from "@/components/filter-bar"
-import { PercentileExplorer } from "@/components/percentile-explorer"
-import { NegotiationLift } from "@/components/negotiation-lift"
 import { MentorQuotesFeed } from "@/components/mentor-quotes"
 import { NavigationHeader } from "@/components/navigation-header"
 import { KpiSummary } from "@/components/kpi-summary"
 import { Skeleton } from "@/components/ui/skeleton"
 
+const PercentileExplorer = dynamic(
+  () =>
+    import("@/components/percentile-explorer").then(
+      (mod) => mod.PercentileExplorer
+    ),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[340px] w-full rounded-xl" />,
+  }
+)
+const NegotiationLift = dynamic(
+  () =>
+    import("@/components/negotiation-lift").then((mod) => mod.NegotiationLift),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[340px] w-full rounded-xl" />,
+  }
+)
 const NetArbitrageSimulator = dynamic(
   () =>
     import("@/components/net-arbitrage").then(
@@ -56,8 +71,12 @@ function DashboardContent() {
   useEffect(() => {
     fetch("/data/records.json")
       .then((res) => res.json())
-      .then((raw) => {
+      .then(async (raw) => {
         if (process.env.NODE_ENV === "development") {
+          const [{ z }, { CareerRecordSchema }] = await Promise.all([
+            import("zod"),
+            import("@/lib/types"),
+          ])
           const parsed = z.array(CareerRecordSchema).safeParse(raw)
           if (parsed.success) {
             setRecords(parsed.data)

@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import {
+import type {
   FilterState,
   MacroIndustry,
   SchoolTierGroup,
@@ -250,6 +250,7 @@ export function FilterBar({
                 <Button
                   variant="outline"
                   size="default"
+                  aria-label="More Filters"
                   className="h-8 gap-1.5 bg-card px-2.5 text-xs"
                 />
               }
@@ -382,6 +383,8 @@ export function FilterBar({
             <button
               type="button"
               title="Adjust compensation to 2026 purchasing power using PSA CPI (134.5)"
+              aria-label="Adjust compensation to 2026 purchasing power using PSA CPI"
+              aria-pressed={filter.cpiAdjusted}
               onClick={() =>
                 onChange({ ...filter, cpiAdjusted: !filter.cpiAdjusted })
               }
@@ -397,6 +400,8 @@ export function FilterBar({
             <button
               type="button"
               title="Estimate monthly net take-home pay after TRAIN tax and statutory deductions"
+              aria-label="Estimate monthly net take-home pay after TRAIN tax and statutory deductions"
+              aria-pressed={filter.takeHomeParity}
               onClick={() =>
                 onChange({ ...filter, takeHomeParity: !filter.takeHomeParity })
               }

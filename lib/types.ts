@@ -1,24 +1,26 @@
 import { z } from "zod"
 
 // Primitive Domain Enums
-export const WorkScopeSchema = z.enum([
+export const WORK_SCOPES = [
   "PH_LOCAL",
   "FOREIGN_REMOTE",
   "LIKELY_REMOTE_INTL",
   "OVERSEAS_OFW",
-])
+] as const
+export const WorkScopeSchema = z.enum(WORK_SCOPES)
 export type WorkScope = z.infer<typeof WorkScopeSchema>
 
-export const SeniorityBandSchema = z.enum([
+export const SENIORITY_BANDS = [
   "ENTRY_0",
   "JUNIOR_1_2",
   "MID_3_5",
   "SENIOR_6_9",
   "STAFF_LEAD_10_PLUS",
-])
+] as const
+export const SeniorityBandSchema = z.enum(SENIORITY_BANDS)
 export type SeniorityBand = z.infer<typeof SeniorityBandSchema>
 
-export const MacroIndustrySchema = z.enum([
+export const MACRO_INDUSTRIES = [
   "TECH_IT",
   "FINANCE_BANKING",
   "FMCG_RETAIL",
@@ -31,17 +33,19 @@ export const MacroIndustrySchema = z.enum([
   "CONSULTING_MARKET_RESEARCH",
   "MANUFACTURING_LOGISTICS",
   "OTHER",
-])
+] as const
+export const MacroIndustrySchema = z.enum(MACRO_INDUSTRIES)
 export type MacroIndustry = z.infer<typeof MacroIndustrySchema>
 
-export const SchoolTierGroupSchema = z.enum([
+export const SCHOOL_TIER_GROUPS = [
   "UP_SYSTEM",
   "ADMU_DLSU_UST",
   "STATE_UNIV_POLYTECHNIC",
   "PRIVATE_METRO",
   "PROVINCIAL_UNIV",
   "UNKNOWN",
-])
+] as const
+export const SchoolTierGroupSchema = z.enum(SCHOOL_TIER_GROUPS)
 export type SchoolTierGroup = z.infer<typeof SchoolTierGroupSchema>
 
 export const GenderSchema = z.enum([

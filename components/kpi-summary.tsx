@@ -1,5 +1,5 @@
 import React from "react"
-import { PercentileStats } from "@/lib/types"
+import type { PercentileStats } from "@/lib/types"
 import { calculateNetArbitrage } from "@/lib/economics"
 import { formatPhp } from "@/lib/utils"
 import {
@@ -97,7 +97,10 @@ export function KpiSummary({
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               {item.title}
               <Tooltip>
-                <TooltipTrigger className="cursor-help text-muted-foreground/60 hover:text-foreground">
+                <TooltipTrigger
+                  aria-label={`${item.title} information`}
+                  className="cursor-help text-muted-foreground/60 hover:text-foreground"
+                >
                   <IconInfoCircle className="size-3.5" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs text-xs">

@@ -1,5 +1,5 @@
-import { ArbitrageComparison } from "./economics"
-import {
+import type { ArbitrageComparison } from "./economics"
+import type {
   MacroIndustry,
   PercentileStats,
   SchoolTierGroup,

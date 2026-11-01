@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { MacroIndustry } from "@/lib/types"
+import type { MacroIndustry } from "@/lib/types"
 import {
   prepareBenefitsMatrixData,
   IndustryBenefitsPoint,

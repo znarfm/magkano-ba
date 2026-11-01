@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { CareerRecord } from "@/lib/types"
+import type { CareerRecord } from "@/lib/types"
 import { computeCompensationView } from "@/lib/economics"
 import { formatPhp } from "@/lib/utils"
 import {

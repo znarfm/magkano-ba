@@ -21,6 +21,7 @@ export function MethodologyModal() {
           <Button
             variant="ghost"
             size="sm"
+            aria-label="Methodology"
             className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
           />
         }

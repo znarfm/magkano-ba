@@ -1,14 +1,16 @@
 import { computeCompensationView } from "./economics"
-import {
+import type {
   CareerRecord,
   FilterState,
   MacroIndustry,
-  MacroIndustrySchema,
   PercentileStats,
   SeniorityBand,
-  SeniorityBandSchema,
   SchoolTierGroup,
-  SchoolTierGroupSchema,
+} from "./types"
+import {
+  MACRO_INDUSTRIES,
+  SENIORITY_BANDS,
+  SCHOOL_TIER_GROUPS,
 } from "./types"
 
 export interface DashboardAnalytics {
@@ -89,7 +91,7 @@ export function computePercentileRank(values: number[], target: number): number 
 export function computeBenefitsMatrix(
   records: CareerRecord[]
 ): DashboardAnalytics["benefitsMatrix"] {
-  const industries = MacroIndustrySchema.options
+  const industries = MACRO_INDUSTRIES
   const benefitsMatrix = {} as DashboardAnalytics["benefitsMatrix"]
   for (const ind of industries) {
     const indRecords = records.filter(
@@ -199,7 +201,7 @@ export function queryDashboardSlice(
   const salaryStats = computePercentiles(salaryValues)
 
   // Breakdown by Seniority Band
-  const bands = SeniorityBandSchema.options
+  const bands = SENIORITY_BANDS
   const bySeniority = {} as Record<SeniorityBand, PercentileStats>
   for (const band of bands) {
     const bandValues = filtered
@@ -226,7 +228,7 @@ export function queryDashboardSlice(
     statsNo.p50 > 0 ? Math.round((liftPhp / statsNo.p50) * 100) : 0
 
   // Breakdown by School Tier
-  const schoolTiers = SchoolTierGroupSchema.options.filter(
+  const schoolTiers = SCHOOL_TIER_GROUPS.filter(
     (t) => t !== "UNKNOWN"
   )
   const bySchoolTier = {} as Record<SchoolTierGroup, PercentileStats>
