@@ -1,6 +1,9 @@
 # Magkano Ba?
 
-Philippine compensation intelligence engine and raw record browser across 4,000+ verified community submissions (Liyab First Pay & r/phcareers).
+Philippine compensation intelligence engine and raw record browser across 4,000+ verified community submissions ([Liyab First Pay](https://docs.google.com/spreadsheets/d/1gnA91Tjr_3UCNV8x1_LoE0oC56r-pXXRdJcgTfOLlm0/edit?gid=549575995#gid=549575995) & [this r/phcareers thread](https://www.reddit.com/r/phcareers/comments/11rtmw3/rolesalary_master_list/) ([sheet](https://docs.google.com/spreadsheets/d/14RExibfpaRE0-81jjLvm374_BihMpq7zjUyFKwAqetU/edit?gid=392097489#gid=392097489))).
+
+> [!NOTE]
+> Data is not updated live, I basically took a snapshot of the two spreadsheets on October 20, 2026. Will updated only when I feel like it. 
 
 ## Features
 
@@ -26,7 +29,7 @@ pnpm install
 # Run dev server (http://localhost:3000)
 pnpm dev
 
-# Run test suite (33 tests across 4 seams)
+# Run test suite
 pnpm test
 
 # Typecheck
