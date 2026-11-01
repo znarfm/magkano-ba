@@ -15,13 +15,37 @@ const DEFAULT_FILTERS: FilterState = {
   searchQuery: "",
 }
 
+export type DashboardTab = "curves" | "arbitrage" | "schools" | "auditor"
+const VALID_TABS: DashboardTab[] = ["curves", "arbitrage", "schools", "auditor"]
+
 export function useDashboardFilterParams(): [
   FilterState,
-  (updater: FilterState | ((prev: FilterState) => FilterState)) => void
+  (updater: FilterState | ((prev: FilterState) => FilterState)) => void,
+  DashboardTab,
+  (nextTab: DashboardTab) => void
 ] {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+
+  const activeTab = useMemo<DashboardTab>(() => {
+    const t = searchParams.get("tab") as DashboardTab | null
+    return t && VALID_TABS.includes(t) ? t : "curves"
+  }, [searchParams])
+
+  const setActiveTab = useCallback(
+    (nextTab: DashboardTab) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (nextTab === "curves") {
+        params.delete("tab")
+      } else {
+        params.set("tab", nextTab)
+      }
+      const qs = params.toString()
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    },
+    [pathname, router, searchParams]
+  )
 
   const filter = useMemo<FilterState>(() => {
     const q = searchParams.get("q") ?? ""
@@ -61,6 +85,10 @@ export function useDashboardFilterParams(): [
     (updater: FilterState | ((prev: FilterState) => FilterState)) => {
       const next = typeof updater === "function" ? updater(filter) : updater
       const params = new URLSearchParams()
+      const currentTab = searchParams.get("tab")
+      if (currentTab) {
+        params.set("tab", currentTab)
+      }
 
       if (next.searchQuery.trim()) {
         params.set("q", next.searchQuery.trim())
@@ -94,8 +122,8 @@ export function useDashboardFilterParams(): [
       const url = qs ? `${pathname}?${qs}` : pathname
       router.replace(url, { scroll: false })
     },
-    [filter, pathname, router]
+    [filter, pathname, router, searchParams]
   )
 
-  return [filter, setFilter]
+  return [filter, setFilter, activeTab, setActiveTab]
 }

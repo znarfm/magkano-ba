@@ -4,7 +4,6 @@ import React, { useState } from "react"
 import { PercentileStats, SchoolTierGroup } from "@/lib/types"
 import {
   prepareSchoolConvergenceData,
-  prepareGranularSchoolData,
   GranularSchoolPoint,
 } from "@/lib/chart-adapters"
 import {
@@ -134,7 +133,7 @@ export function SchoolConvergence({
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <CardDescription className="text-xs text-muted-foreground">
             {viewMode === "granular"
-              ? "Median starting salary by specific canonical university (minimum sample n ≥ 15)."
+              ? "Median starting salary by specific canonical university (minimum sample n ≥ 5)."
               : "Median starting compensation and interquartile ranges across institutional tiers."}
           </CardDescription>
           {viewMode === "granular" && (

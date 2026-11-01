@@ -4,6 +4,7 @@ import React from "react"
 import {
   FilterState,
   MacroIndustry,
+  SchoolTierGroup,
   SeniorityBand,
   WorkScope,
 } from "@/lib/types"
@@ -22,6 +23,8 @@ import {
   IconReceipt2,
   IconTrendingUp,
   IconRotateClockwise,
+  IconSchool,
+  IconUserScan,
 } from "@tabler/icons-react"
 
 interface FilterBarProps {
@@ -29,6 +32,7 @@ interface FilterBarProps {
   onChange: (next: FilterState) => void
   totalCount: number
   filteredCount: number
+  roleFamilies?: string[]
 }
 
 const INDUSTRIES: { label: string; value: MacroIndustry | "ALL" }[] = [
@@ -59,6 +63,15 @@ const SENIORITIES: { label: string; value: SeniorityBand | "ALL" }[] = [
   { label: "10+ YOE · Staff / Lead", value: "STAFF_LEAD_10_PLUS" },
 ]
 
+const SCHOOL_TIERS: { label: string; value: SchoolTierGroup | "ALL" }[] = [
+  { label: "All School Tiers", value: "ALL" },
+  { label: "UP System", value: "UP_SYSTEM" },
+  { label: "ADMU / DLSU / UST", value: "ADMU_DLSU_UST" },
+  { label: "State Univ / Poly (PUP/PLM/TUP)", value: "STATE_UNIV_POLYTECHNIC" },
+  { label: "Private Metro Manila", value: "PRIVATE_METRO" },
+  { label: "Provincial Univ", value: "PROVINCIAL_UNIV" },
+]
+
 const SCOPES: { label: string; value: WorkScope }[] = [
   { label: "PH Local", value: "PH_LOCAL" },
   { label: "Foreign Remote", value: "FOREIGN_REMOTE" },
@@ -71,7 +84,15 @@ export function FilterBar({
   onChange,
   totalCount,
   filteredCount,
+  roleFamilies = [],
 }: FilterBarProps) {
+  const roleItems = React.useMemo(
+    () => [
+      { label: "All Role Families", value: "ALL" },
+      ...roleFamilies.map((rf) => ({ label: rf, value: rf })),
+    ],
+    [roleFamilies]
+  )
   const [searchInput, setSearchInput] = React.useState(filter.searchQuery || "")
   const [prevSearchQuery, setPrevSearchQuery] = React.useState(
     filter.searchQuery
@@ -109,7 +130,9 @@ export function FilterBar({
   const isFiltered =
     Boolean(filter.searchQuery) ||
     filter.macroIndustry !== "ALL" ||
+    filter.roleFamily !== "ALL" ||
     filter.seniorityBand !== "ALL" ||
+    filter.schoolTier !== "ALL" ||
     !filter.cpiAdjusted ||
     filter.takeHomeParity ||
     filter.workScopes.length !== 2
@@ -152,6 +175,7 @@ export function FilterBar({
                 onChange({
                   ...filter,
                   macroIndustry: (val as MacroIndustry | "ALL") || "ALL",
+                  roleFamily: "ALL",
                 })
               }
             >
@@ -172,6 +196,37 @@ export function FilterBar({
               </SelectContent>
             </Select>
           </div>
+
+          {roleFamilies.length > 0 && (
+            <div className="w-44 sm:w-52">
+              <Select
+                items={roleItems}
+                value={filter.roleFamily || "ALL"}
+                onValueChange={(val) =>
+                  onChange({
+                    ...filter,
+                    roleFamily: val || "ALL",
+                  })
+                }
+              >
+                <SelectTrigger className="h-8 border-input bg-card/60 text-xs gap-1.5">
+                  <IconUserScan className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <SelectValue placeholder="All Role Families" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleItems.map((rf) => (
+                    <SelectItem
+                      key={rf.value}
+                      value={rf.value}
+                      className="text-xs"
+                    >
+                      {rf.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="w-40 sm:w-48">
             <Select
@@ -196,6 +251,35 @@ export function FilterBar({
                     className="text-xs"
                   >
                     {sen.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-40 sm:w-48">
+            <Select
+              items={SCHOOL_TIERS}
+              value={filter.schoolTier || "ALL"}
+              onValueChange={(val) =>
+                onChange({
+                  ...filter,
+                  schoolTier: (val as SchoolTierGroup | "ALL") || "ALL",
+                })
+              }
+            >
+              <SelectTrigger className="h-8 border-input bg-card/60 text-xs gap-1.5">
+                <IconSchool className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <SelectValue placeholder="All School Tiers" />
+              </SelectTrigger>
+              <SelectContent>
+                {SCHOOL_TIERS.map((st) => (
+                  <SelectItem
+                    key={st.value}
+                    value={st.value}
+                    className="text-xs"
+                  >
+                    {st.label}
                   </SelectItem>
                 ))}
               </SelectContent>

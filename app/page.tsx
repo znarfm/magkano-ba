@@ -4,17 +4,24 @@ import { Suspense, useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { z } from "zod"
 import { CareerRecord, CareerRecordSchema } from "@/lib/types"
-import { useDashboardFilterParams } from "@/hooks/use-dashboard-filter-params"
-import { queryDashboardSlice, queryGranularSchoolStats } from "@/lib/analytics"
+import {
+  DashboardTab,
+  useDashboardFilterParams,
+} from "@/hooks/use-dashboard-filter-params"
+import {
+  computeBenefitsMatrix,
+  queryDashboardSlice,
+  queryGranularSchoolStats,
+} from "@/lib/analytics"
 import { prepareGranularSchoolData } from "@/lib/chart-adapters"
 import { FilterBar } from "@/components/filter-bar"
 import { PercentileExplorer } from "@/components/percentile-explorer"
 import { NegotiationLift } from "@/components/negotiation-lift"
+import { MentorQuotesFeed } from "@/components/mentor-quotes"
 import { NavigationHeader } from "@/components/navigation-header"
 import { MethodologyModal } from "@/components/methodology-modal"
 import { KpiSummary } from "@/components/kpi-summary"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   IconChartLine,
@@ -54,7 +61,8 @@ function DashboardContent() {
   const [records, setRecords] = useState<CareerRecord[]>([])
   const [loading, setLoading] = useState<boolean>(true)
 
-  const [filter, setFilter] = useDashboardFilterParams()
+  const [filter, setFilter, activeTab, setActiveTab] =
+    useDashboardFilterParams()
 
   useEffect(() => {
     fetch("/data/records.json")
@@ -83,43 +91,35 @@ function DashboardContent() {
       })
   }, [])
 
-  const analytics = useMemo(() => {
-    return queryDashboardSlice(records, filter)
-  }, [records, filter])
+  const staticBenefitsMatrix = useMemo(() => {
+    return computeBenefitsMatrix(records)
+  }, [records])
 
-  const granularSchools = useMemo(() => {
-    const stats = queryGranularSchoolStats(records, {
-      cpiAdjusted: filter.cpiAdjusted,
-      takeHomeParity: filter.takeHomeParity,
-      minCount: 15,
-    })
-    return prepareGranularSchoolData(stats)
-  }, [records, filter.cpiAdjusted, filter.takeHomeParity])
-
-  const [activeTab, setActiveTab] = useState("curves")
-
-  // Sync tab with URL query parameter on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search)
-      const tabParam = params.get("tab")
+  const roleFamilies = useMemo(() => {
+    const set = new Set<string>()
+    for (const r of records) {
       if (
-        tabParam &&
-        ["curves", "arbitrage", "schools", "auditor"].includes(tabParam)
+        filter.macroIndustry === "ALL" ||
+        r.macroIndustry === filter.macroIndustry
       ) {
-        setActiveTab(tabParam)
+        set.add(r.roleFamily)
       }
     }
-  }, [])
+    return Array.from(set).sort()
+  }, [records, filter.macroIndustry])
 
-  const handleTabChange = (val: string) => {
-    setActiveTab(val)
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href)
-      url.searchParams.set("tab", val)
-      window.history.replaceState({}, "", url.toString())
-    }
-  }
+  const analytics = useMemo(() => {
+    return queryDashboardSlice(records, filter, staticBenefitsMatrix)
+  }, [records, filter, staticBenefitsMatrix])
+
+  const granularSchools = useMemo(() => {
+    const stats = queryGranularSchoolStats(analytics.filteredRecords, {
+      cpiAdjusted: filter.cpiAdjusted,
+      takeHomeParity: filter.takeHomeParity,
+      minCount: 5,
+    })
+    return prepareGranularSchoolData(stats)
+  }, [analytics.filteredRecords, filter.cpiAdjusted, filter.takeHomeParity])
 
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans text-foreground">
@@ -132,6 +132,7 @@ function DashboardContent() {
         onChange={setFilter}
         totalCount={records.length}
         filteredCount={analytics.filteredCount}
+        roleFamilies={roleFamilies}
       />
 
       {/* Main Content Area */}
@@ -159,7 +160,7 @@ function DashboardContent() {
 
             <Tabs
               value={activeTab}
-              onValueChange={(val) => val && handleTabChange(val)}
+              onValueChange={(val) => val && setActiveTab(val as DashboardTab)}
               className="space-y-6"
             >
             <div className="overflow-x-auto pb-0.5">
@@ -182,19 +183,25 @@ function DashboardContent() {
             {/* TAB 1: Compensation Curves & Negotiation Lift */}
             <TabsContent value="curves" className="space-y-6">
               {activeTab === "curves" && (
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                  <div className="lg:col-span-2">
-                    <PercentileExplorer
-                      stats={analytics.salaryStats}
-                      bySeniority={analytics.bySeniority}
-                      cpiAdjusted={filter.cpiAdjusted}
-                      takeHomeParity={filter.takeHomeParity}
-                    />
+                <>
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <div className="lg:col-span-2">
+                      <PercentileExplorer
+                        stats={analytics.salaryStats}
+                        bySeniority={analytics.bySeniority}
+                        cpiAdjusted={filter.cpiAdjusted}
+                        takeHomeParity={filter.takeHomeParity}
+                      />
+                    </div>
+                    <div className="lg:col-span-1">
+                      <NegotiationLift lift={analytics.negotiationLift} />
+                    </div>
                   </div>
-                  <div className="lg:col-span-1">
-                    <NegotiationLift lift={analytics.negotiationLift} />
-                  </div>
-                </div>
+                  <MentorQuotesFeed
+                    quotes={analytics.mentorQuotes}
+                    cpiAdjusted={filter.cpiAdjusted}
+                  />
+                </>
               )}
             </TabsContent>
 
@@ -227,8 +234,10 @@ function DashboardContent() {
                 <div className="space-y-6">
                   <OfferAuditor
                     currentStats={analytics.salaryStats}
+                    salaryValues={analytics.salaryValues}
                     currentQuotes={analytics.mentorQuotes}
                     activeIndustry={filter.macroIndustry || "TECH_IT"}
+                    takeHomeParity={filter.takeHomeParity}
                   />
                 </div>
               )}

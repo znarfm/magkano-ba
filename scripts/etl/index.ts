@@ -772,7 +772,7 @@ export function runETL() {
   }
 
   const outPath = path.join(outDir, "records.json")
-  fs.writeFileSync(outPath, JSON.stringify(records, null, 2), "utf8")
+  fs.writeFileSync(outPath, JSON.stringify(records), "utf8")
 
   console.log(
     `✅ Success! Generated ${records.length} canonical records at: ${outPath}`

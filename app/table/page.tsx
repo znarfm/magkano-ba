@@ -1,12 +1,7 @@
 "use client"
 
 import React, { Suspense, useEffect, useMemo, useState } from "react"
-import {
-  CareerRecord,
-  MacroIndustry,
-  SeniorityBand,
-  WorkScope,
-} from "@/lib/types"
+import { CareerRecord } from "@/lib/types"
 import {
   queryTableRecords,
   exportRecordsToCsv,
@@ -41,9 +36,6 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconChevronLeft,
-  IconBuilding,
-  IconBriefcase,
-  IconSchool,
   IconMessage2,
   IconGift,
   IconArrowUp,
@@ -102,6 +94,22 @@ function TableContent() {
 
   // Expandable row state
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
+  const [searchInput, setSearchInput] = useState(searchQuery)
+  const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery)
+
+  if (searchQuery !== prevSearchQuery) {
+    setPrevSearchQuery(searchQuery)
+    setSearchInput(searchQuery)
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== searchQuery) {
+        setParams({ searchQuery: searchInput, page: 1 })
+      }
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [searchInput, searchQuery, setParams])
 
   useEffect(() => {
     fetch("/data/records.json")
@@ -115,10 +123,6 @@ function TableContent() {
         setLoading(false)
       })
   }, [])
-
-  const handleSearchChange = (val: string) => {
-    setParams({ searchQuery: val, page: 1 })
-  }
 
   const queryResult = useMemo(() => {
     return queryTableRecords(records, {
@@ -215,8 +219,8 @@ function TableContent() {
             <Input
               type="text"
               placeholder="Search by job title, university, or advice..."
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="h-8 pl-8 text-xs bg-background"
             />
           </div>

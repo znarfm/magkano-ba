@@ -70,73 +70,123 @@ export function computePercentiles(values: number[]): PercentileStats {
 }
 
 /**
+ * Computes exact percentile rank (0–100) of a given value against a distribution.
+ */
+export function computePercentileRank(values: number[], target: number): number {
+  if (values.length === 0) return 0
+  let below = 0
+  let equal = 0
+  for (const v of values) {
+    if (v < target) below++
+    else if (v === target) equal++
+  }
+  return Math.round(((below + 0.5 * equal) / values.length) * 100)
+}
+
+/**
+ * Computes static Benefits Matrix by MacroIndustry across the dataset.
+ */
+export function computeBenefitsMatrix(
+  records: CareerRecord[]
+): DashboardAnalytics["benefitsMatrix"] {
+  const industries = MacroIndustrySchema.options
+  const benefitsMatrix = {} as DashboardAnalytics["benefitsMatrix"]
+  for (const ind of industries) {
+    const indRecords = records.filter(
+      (r) => r.macroIndustry === ind && r.sourceSheet === "CAREER_PATH_INFO"
+    )
+    const months = indRecords
+      .map((r) => r.benefits.guaranteedMonths)
+      .filter((m) => m > 0)
+    const allowances = indRecords
+      .map((r) => r.benefits.monthlyAllowancePhp)
+      .filter((a) => a > 0)
+    const leaves = indRecords
+      .map((r) => r.benefits.vacationLeaveDays)
+      .filter((l): l is number => l !== null && l > 0)
+
+    const medMonths = computePercentiles(months).p50 || 13
+    const medAllow = computePercentiles(allowances).p50 || 0
+    const avgLeaves =
+      leaves.length > 0
+        ? Math.round(leaves.reduce((a, b) => a + b, 0) / leaves.length)
+        : 15
+
+    benefitsMatrix[ind] = {
+      sampleCount: indRecords.length,
+      medianGuaranteedMonths: medMonths,
+      medianAllowancePhp: medAllow,
+      avgLeaveDays: avgLeaves,
+    }
+  }
+  return benefitsMatrix
+}
+
+/**
+ * Predicate matching a record against FilterState (excluding numerical > 0 salary check).
+ */
+export function matchesDashboardFilter(
+  r: CareerRecord,
+  filter: FilterState
+): boolean {
+  if (
+    filter.workScopes.length > 0 &&
+    !filter.workScopes.includes(r.workScope)
+  ) {
+    return false
+  }
+  if (
+    filter.macroIndustry &&
+    filter.macroIndustry !== "ALL" &&
+    r.macroIndustry !== filter.macroIndustry
+  ) {
+    return false
+  }
+  if (
+    filter.roleFamily &&
+    filter.roleFamily !== "ALL" &&
+    r.roleFamily !== filter.roleFamily
+  ) {
+    return false
+  }
+  if (
+    filter.seniorityBand &&
+    filter.seniorityBand !== "ALL" &&
+    r.seniorityBand !== filter.seniorityBand
+  ) {
+    return false
+  }
+  if (
+    filter.schoolTier &&
+    filter.schoolTier !== "ALL" &&
+    r.schoolTierGroup !== filter.schoolTier
+  ) {
+    return false
+  }
+  if (filter.searchQuery && filter.searchQuery.trim() !== "") {
+    const q = filter.searchQuery.toLowerCase()
+    const match =
+      r.rawTitle.toLowerCase().includes(q) ||
+      r.roleFamily.toLowerCase().includes(q) ||
+      (r.schoolCanonical && r.schoolCanonical.toLowerCase().includes(q)) ||
+      (r.mentorAdviceQuote && r.mentorAdviceQuote.toLowerCase().includes(q))
+    if (!match) return false
+  }
+  return true
+}
+
+/**
  * Filters dataset and calculates aggregated analytics across modules.
  */
 export function queryDashboardSlice(
   records: CareerRecord[],
-  filter: FilterState
-): DashboardAnalytics {
-  const filtered = records.filter((r) => {
-    // Exclude zero-salary records from numerical analytics
-    if (r.nominalMonthlyGrossPhp.median <= 0) return false
-
-    // Work scope filter
-    if (
-      filter.workScopes.length > 0 &&
-      !filter.workScopes.includes(r.workScope)
-    ) {
-      return false
-    }
-
-    // Macro Industry filter
-    if (
-      filter.macroIndustry &&
-      filter.macroIndustry !== "ALL" &&
-      r.macroIndustry !== filter.macroIndustry
-    ) {
-      return false
-    }
-
-    // Role Family filter
-    if (
-      filter.roleFamily &&
-      filter.roleFamily !== "ALL" &&
-      r.roleFamily !== filter.roleFamily
-    ) {
-      return false
-    }
-
-    // Seniority Band filter
-    if (
-      filter.seniorityBand &&
-      filter.seniorityBand !== "ALL" &&
-      r.seniorityBand !== filter.seniorityBand
-    ) {
-      return false
-    }
-
-    // School Tier filter
-    if (
-      filter.schoolTier &&
-      filter.schoolTier !== "ALL" &&
-      r.schoolTierGroup !== filter.schoolTier
-    ) {
-      return false
-    }
-
-    // Free text search
-    if (filter.searchQuery && filter.searchQuery.trim() !== "") {
-      const q = filter.searchQuery.toLowerCase()
-      const match =
-        r.rawTitle.toLowerCase().includes(q) ||
-        r.roleFamily.toLowerCase().includes(q) ||
-        (r.schoolCanonical && r.schoolCanonical.toLowerCase().includes(q)) ||
-        (r.mentorAdviceQuote && r.mentorAdviceQuote.toLowerCase().includes(q))
-      if (!match) return false
-    }
-
-    return true
-  })
+  filter: FilterState,
+  precomputedBenefitsMatrix?: DashboardAnalytics["benefitsMatrix"]
+): DashboardAnalytics & { filteredRecords: CareerRecord[]; salaryValues: number[] } {
+  const filtered = records.filter(
+    (r) =>
+      r.nominalMonthlyGrossPhp.median > 0 && matchesDashboardFilter(r, filter)
+  )
 
   // Extract effective values for current CPI / Parity toggle
   const getEffectiveValue = (r: CareerRecord) =>
@@ -187,79 +237,24 @@ export function queryDashboardSlice(
     bySchoolTier[tier] = computePercentiles(tierValues)
   }
 
-  // Benefits Matrix by MacroIndustry (from all records with benefits)
-  const industries = MacroIndustrySchema.options
-  const benefitsMatrix = {} as DashboardAnalytics["benefitsMatrix"]
-  for (const ind of industries) {
-    const indRecords = records.filter(
-      (r) => r.macroIndustry === ind && r.sourceSheet === "CAREER_PATH_INFO"
-    )
-    const months = indRecords
-      .map((r) => r.benefits.guaranteedMonths)
-      .filter((m) => m > 0)
-    const allowances = indRecords
-      .map((r) => r.benefits.monthlyAllowancePhp)
-      .filter((a) => a > 0)
-    const leaves = indRecords
-      .map((r) => r.benefits.vacationLeaveDays)
-      .filter((l): l is number => l !== null && l > 0)
-
-    const medMonths = computePercentiles(months).p50 || 13
-    const medAllow = computePercentiles(allowances).p50 || 0
-    const avgLeaves =
-      leaves.length > 0
-        ? Math.round(leaves.reduce((a, b) => a + b, 0) / leaves.length)
-        : 15
-
-    benefitsMatrix[ind] = {
-      sampleCount: indRecords.length,
-      medianGuaranteedMonths: medMonths,
-      medianAllowancePhp: medAllow,
-      avgLeaveDays: avgLeaves,
-    }
-  }
+  const benefitsMatrix =
+    precomputedBenefitsMatrix ?? computeBenefitsMatrix(records)
 
   // Filtered mentor quotes
   const mentorQuotes = records
-    .filter((r) => r.mentorAdviceQuote && r.mentorAdviceQuote.length > 20)
-    .filter((r) => {
-      if (
-        filter.macroIndustry &&
-        filter.macroIndustry !== "ALL" &&
-        r.macroIndustry !== filter.macroIndustry
-      ) {
-        return false
-      }
-      if (
-        filter.seniorityBand &&
-        filter.seniorityBand !== "ALL" &&
-        r.seniorityBand !== filter.seniorityBand
-      ) {
-        return false
-      }
-      if (
-        filter.schoolTier &&
-        filter.schoolTier !== "ALL" &&
-        r.schoolTierGroup !== filter.schoolTier
-      ) {
-        return false
-      }
-      if (filter.searchQuery && filter.searchQuery.trim() !== "") {
-        const q = filter.searchQuery.toLowerCase()
-        return (
-          r.mentorAdviceQuote!.toLowerCase().includes(q) ||
-          r.rawTitle.toLowerCase().includes(q) ||
-          r.roleFamily.toLowerCase().includes(q) ||
-          (r.schoolCanonical && r.schoolCanonical.toLowerCase().includes(q))
-        )
-      }
-      return true
-    })
+    .filter(
+      (r) =>
+        r.mentorAdviceQuote &&
+        r.mentorAdviceQuote.length > 20 &&
+        matchesDashboardFilter(r, filter)
+    )
     .slice(0, 30)
 
   return {
     totalRecords: records.length,
     filteredCount: filtered.length,
+    filteredRecords: filtered,
+    salaryValues,
     salaryStats,
     bySeniority,
     negotiationLift: {
@@ -423,27 +418,32 @@ export function queryTableRecords(
   })
 
   // Sort
-  filtered.sort((a, b) => {
-    let diff = 0
-    if (sortBy === "salary") {
-      const valA = cpiAdjusted
-        ? computeCompensationView(a, { cpiAdjusted: true, takeHomeParity: false })
-        : a.nominalMonthlyGrossPhp.median
-      const valB = cpiAdjusted
-        ? computeCompensationView(b, { cpiAdjusted: true, takeHomeParity: false })
-        : b.nominalMonthlyGrossPhp.median
-      diff = valA - valB
-    } else if (sortBy === "cohortYear") {
-      diff = a.cohortYear - b.cohortYear
-    } else if (sortBy === "yoeYears") {
-      diff = a.yoeYears - b.yoeYears
-    } else if (sortBy === "rawTitle") {
-      diff = a.rawTitle.localeCompare(b.rawTitle)
-    } else if (sortBy === "schoolCanonical") {
-      diff = (a.schoolCanonical ?? "").localeCompare(b.schoolCanonical ?? "")
+  if (sortBy === "salary" && cpiAdjusted) {
+    const decorated = filtered.map((r) => ({
+      r,
+      val: computeCompensationView(r, { cpiAdjusted: true, takeHomeParity: false }),
+    }))
+    decorated.sort((a, b) => (sortOrder === "asc" ? a.val - b.val : b.val - a.val))
+    for (let i = 0; i < decorated.length; i++) {
+      filtered[i] = decorated[i].r
     }
-    return sortOrder === "asc" ? diff : -diff
-  })
+  } else {
+    filtered.sort((a, b) => {
+      let diff = 0
+      if (sortBy === "salary") {
+        diff = a.nominalMonthlyGrossPhp.median - b.nominalMonthlyGrossPhp.median
+      } else if (sortBy === "cohortYear") {
+        diff = a.cohortYear - b.cohortYear
+      } else if (sortBy === "yoeYears") {
+        diff = a.yoeYears - b.yoeYears
+      } else if (sortBy === "rawTitle") {
+        diff = a.rawTitle.localeCompare(b.rawTitle)
+      } else if (sortBy === "schoolCanonical") {
+        diff = (a.schoolCanonical ?? "").localeCompare(b.schoolCanonical ?? "")
+      }
+      return sortOrder === "asc" ? diff : -diff
+    })
+  }
 
   const totalFiltered = filtered.length
   const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize))

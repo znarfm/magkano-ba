@@ -12,7 +12,11 @@ import {
   computeContractorAnnualTax,
   calculateNetArbitrage,
 } from "../lib/economics"
-import { computePercentiles, queryDashboardSlice } from "../lib/analytics"
+import {
+  computePercentiles,
+  computePercentileRank,
+  queryDashboardSlice,
+} from "../lib/analytics"
 import { buildGroundedAuditPrompt } from "../lib/auditor"
 import { CareerRecord } from "../lib/types"
 
@@ -168,6 +172,9 @@ describe("Seam 3: Client Analytical Query & Percentile Engine", () => {
     expect(stats.p75).toBe(40000)
     expect(stats.max).toBe(50000)
     expect(stats.mean).toBe(30000)
+    expect(computePercentileRank(values, 30000)).toBe(50)
+    expect(computePercentileRank(values, 10000)).toBe(10)
+    expect(computePercentileRank(values, 60000)).toBe(100)
   })
 
   it("filters dashboard slice and calculates negotiation lift", () => {

@@ -1,13 +1,17 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useMemo, useState } from "react"
 import {
   PercentileStats,
   CareerRecord,
   WorkScope,
   MacroIndustry,
 } from "@/lib/types"
-import { calculateNetArbitrage } from "@/lib/economics"
+import {
+  calculateNetArbitrage,
+  computeCompensationView,
+} from "@/lib/economics"
+import { computePercentileRank } from "@/lib/analytics"
 import { buildGroundedAuditPrompt, callGeminiAudit } from "@/lib/auditor"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { formatPhp } from "@/lib/utils"
@@ -37,8 +41,10 @@ import {
 
 interface OfferAuditorProps {
   currentStats: PercentileStats
+  salaryValues?: number[]
   currentQuotes: CareerRecord[]
   activeIndustry: MacroIndustry | "ALL"
+  takeHomeParity?: boolean
 }
 
 const WORK_SCOPES: { value: WorkScope; label: string }[] = [
@@ -49,8 +55,10 @@ const WORK_SCOPES: { value: WorkScope; label: string }[] = [
 
 export function OfferAuditor({
   currentStats,
+  salaryValues = [],
   currentQuotes,
   activeIndustry,
+  takeHomeParity = false,
 }: OfferAuditorProps) {
   const [apiKey, setApiKey] = useLocalStorage<string>(
     "ph_career_gemini_key",
@@ -114,16 +122,44 @@ export function OfferAuditor({
     }
   }
 
+  const instantArbitrage = useMemo(
+    () => calculateNetArbitrage(monthlyOffer),
+    [monthlyOffer]
+  )
+  const comparableOffer = useMemo(
+    () =>
+      computeCompensationView(
+        {
+          cohortYear: 2026,
+          workScope,
+          nominalMonthlyGrossPhp: {
+            min: monthlyOffer,
+            median: monthlyOffer,
+            max: monthlyOffer,
+          },
+          benefits: {
+            guaranteedMonths: workScope === "FOREIGN_REMOTE" ? 12 : 13,
+            monthlyAllowancePhp: 0,
+            hmoCoveragePhp: null,
+            vacationLeaveDays: null,
+            rawBenefitsSummary: null,
+          },
+        },
+        { cpiAdjusted: false, takeHomeParity }
+      ),
+    [takeHomeParity, monthlyOffer, workScope]
+  )
+
   // Determine offer tier visually relative to current slice
   const getOfferTier = () => {
     if (!currentStats.p50) return null
-    if (monthlyOffer < currentStats.p25) {
+    if (comparableOffer < currentStats.p25) {
       return {
         label: "Below P25 Floor",
         color: "text-rose-600 border-rose-500/40 bg-rose-500/10",
       }
     }
-    if (monthlyOffer <= currentStats.p75) {
+    if (comparableOffer <= currentStats.p75) {
       return {
         label: "Competitive Market Band",
         color: "text-emerald-600 border-emerald-500/40 bg-emerald-500/10",
@@ -136,6 +172,10 @@ export function OfferAuditor({
   }
 
   const tier = getOfferTier()
+  const percentileRank = useMemo(
+    () => computePercentileRank(salaryValues, comparableOffer),
+    [salaryValues, comparableOffer]
+  )
 
   return (
     <Card className="border-border/70 bg-card/60 shadow-xs backdrop-blur-xs">
@@ -200,11 +240,16 @@ export function OfferAuditor({
 
         {/* Visual Benchmark Bar */}
         {currentStats.p50 > 0 && (
-          <div className="space-y-2 rounded-lg border border-border/70 bg-muted/10 p-3 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-foreground">
-                Offer Benchmark Visualizer:
-              </span>
+          <div className="space-y-2.5 rounded-lg border border-border/70 bg-muted/10 p-3 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-foreground">
+                  Instant Deterministic Benchmark:
+                </span>
+                <span className="rounded bg-primary/15 px-1.5 py-0.5 font-mono text-[11px] font-bold text-primary">
+                  P{percentileRank} ({percentileRank}th Percentile)
+                </span>
+              </div>
               {tier && (
                 <Badge
                   variant="outline"
@@ -218,7 +263,7 @@ export function OfferAuditor({
               <div
                 className="h-full bg-primary transition-all duration-300"
                 style={{
-                  width: `${Math.min(100, Math.max(5, (monthlyOffer / (currentStats.p75 * 1.3)) * 100))}%`,
+                  width: `${Math.min(100, Math.max(5, percentileRank))}%`,
                 }}
               />
             </div>
@@ -226,6 +271,26 @@ export function OfferAuditor({
               <span>P25: {formatPhp(currentStats.p25)}</span>
               <span>Median: {formatPhp(currentStats.p50)}</span>
               <span>P75: {formatPhp(currentStats.p75)}</span>
+            </div>
+            <div className="grid grid-cols-1 gap-2 border-t border-border/50 pt-2 font-mono text-[11px] sm:grid-cols-3">
+              <div>
+                <span className="text-muted-foreground">PH Local Net Eq: </span>
+                <strong className="text-foreground">
+                  {formatPhp(instantArbitrage.localMonthlyNetEquivalent)}/mo
+                </strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Remote Break-Even: </span>
+                <strong className="text-foreground">
+                  {formatPhp(instantArbitrage.remoteBreakEvenMonthlyGross)}/mo
+                </strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Remote 8% Net Eq: </span>
+                <strong className="text-foreground">
+                  {formatPhp(instantArbitrage.remoteMonthlyNetEquivalent)}/mo
+                </strong>
+              </div>
             </div>
           </div>
         )}
