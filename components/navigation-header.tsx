@@ -3,109 +3,191 @@
 import React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useTheme } from "next-themes"
 import { AppIcon } from "@/components/icons/app-icon"
-import { Badge } from "@/components/ui/badge"
-import {
-  IconChartBar,
-  IconTable,
-} from "@tabler/icons-react"
+import { DashboardTab } from "@/hooks/use-dashboard-filter-params"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { MethodologyModal } from "@/components/methodology-modal"
+import {
+  IconChartLine,
+  IconBuildingArch,
+  IconScale,
+  IconSparkles,
+  IconTable,
+  IconSun,
+  IconMoon,
+} from "@tabler/icons-react"
 
-export function NavigationHeader() {
+interface NavigationHeaderProps {
+  activeTab?: DashboardTab
+  onTabChange?: (tab: DashboardTab) => void
+}
+
+const DASHBOARD_VIEWS: {
+  tab: DashboardTab
+  href: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+}[] = [
+  {
+    tab: "curves",
+    href: "/",
+    label: "Benchmarks",
+    icon: IconChartLine,
+  },
+  {
+    tab: "schools",
+    href: "/?tab=schools",
+    label: "Schools & Perks",
+    icon: IconBuildingArch,
+  },
+  {
+    tab: "arbitrage",
+    href: "/?tab=arbitrage",
+    label: "Arbitrage",
+    icon: IconScale,
+  },
+  {
+    tab: "auditor",
+    href: "/?tab=auditor",
+    label: "Offer Auditor",
+    icon: IconSparkles,
+  },
+]
+
+export function NavigationHeader({
+  activeTab = "curves",
+  onTabChange,
+}: NavigationHeaderProps) {
   const pathname = usePathname()
-
-  const navItems = [
-    {
-      href: "/",
-      label: "Overview",
-      icon: IconChartBar,
-      active: pathname === "/",
-    },
-    {
-      href: "/table",
-      label: "Raw Records",
-      icon: IconTable,
-      active: pathname.startsWith("/table"),
-    },
-  ]
+  const { resolvedTheme, setTheme } = useTheme()
+  const isTablePage = pathname.startsWith("/table")
 
   return (
-    <header className="border-b border-border/80 bg-card/50 px-4 py-2.5 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
-        {/* Brand & Badge */}
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
-            <AppIcon className="h-7 w-7 shrink-0 rounded-lg shadow-xs" />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-base font-bold tracking-tight text-foreground">
-                  Magkano Ba?
-                </span>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger className="inline-flex cursor-help">
-                      <Badge
-                        variant="outline"
-                        className="border-primary/40 py-0 font-mono text-[10px] text-primary"
-                      >
-                        2026 PSA CPI
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs text-xs">
-                      Philippine Statistics Authority (PSA) Consumer Price Index (2018=100). Current 2026 index is 134.5 (+34.5% cumulative inflation since 2018). Adjusts historical peso compensation to 2026 purchasing power.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                Philippine Compensation Intelligence
-              </p>
-            </div>
-          </Link>
-        </div>
+    <header className="border-b border-border bg-background/95 px-4 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4">
+        {/* Brand */}
+        <Link
+          href="/"
+          onClick={(e) => {
+            if (!isTablePage && onTabChange) {
+              e.preventDefault()
+              onTabChange("curves")
+            }
+          }}
+          className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-85"
+        >
+          <AppIcon className="size-6 shrink-0 rounded-md" />
+          <div className="flex items-baseline gap-2">
+            <span className="font-heading text-sm font-semibold tracking-tight text-foreground sm:text-base">
+              Magkano Ba?
+            </span>
+            <span className="hidden text-xs text-muted-foreground lg:inline">
+              PH Compensation Ledger
+            </span>
+          </div>
+        </Link>
 
-        {/* Center Navigation Links */}
-        <nav className="flex items-center gap-1 rounded-lg border border-border/70 bg-muted/40 p-1">
-          {navItems.map((item) => {
-            const Icon = item.icon
+        {/* Unified Workspace Navigation */}
+        <nav
+          aria-label="Primary workspace navigation"
+          className="flex items-center gap-0.5 overflow-x-auto rounded-lg border border-border/80 bg-muted/50 p-0.5"
+        >
+          {DASHBOARD_VIEWS.map((view) => {
+            const Icon = view.icon
+            const isActive = !isTablePage && activeTab === view.tab
+
+            if (!isTablePage && onTabChange) {
+              return (
+                <button
+                  key={view.tab}
+                  type="button"
+                  onClick={() => onTabChange(view.tab)}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
+                    isActive
+                      ? "bg-background text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon
+                    className={`size-3.5 shrink-0 ${
+                      isActive ? "text-primary" : "text-muted-foreground"
+                    }`}
+                  />
+                  <span>{view.label}</span>
+                </button>
+              )
+            }
+
             return (
               <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                  item.active
-                    ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                key={view.tab}
+                href={view.href}
+                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
+                  isActive
+                    ? "bg-background text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Icon className={`h-3.5 w-3.5 ${item.active ? "text-primary" : "text-muted-foreground"}`} />
-                <span>{item.label}</span>
+                <Icon
+                  className={`size-3.5 shrink-0 ${
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  }`}
+                />
+                <span>{view.label}</span>
               </Link>
             )
           })}
+
+          <Separator orientation="vertical" className="mx-0.5 h-4" />
+
+          <Link
+            href="/table"
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
+              isTablePage
+                ? "bg-background text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <IconTable
+              className={`size-3.5 shrink-0 ${
+                isTablePage ? "text-primary" : "text-muted-foreground"
+              }`}
+            />
+            <span>Raw Data</span>
+          </Link>
         </nav>
 
-        {/* Right Status Strip */}
-        <div className="hidden items-center gap-2.5 font-mono text-xs text-muted-foreground md:flex">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger className="inline-flex cursor-help items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                PSA CPI: 134.5
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs text-xs">
-                Active macroeconomic deflator: 2026 CPI benchmark at 134.5 rebased from 2018=100.
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <span>•</span>
+        {/* Right Actions */}
+        <div className="flex shrink-0 items-center gap-1">
           <MethodologyModal />
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Toggle color theme"
+                  onClick={() =>
+                    setTheme(resolvedTheme === "dark" ? "light" : "dark")
+                  }
+                  className="text-muted-foreground hover:text-foreground"
+                />
+              }
+            >
+              <IconSun className="hidden size-4 dark:block" />
+              <IconMoon className="block size-4 dark:hidden" />
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              Toggle theme (Press D)
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </header>

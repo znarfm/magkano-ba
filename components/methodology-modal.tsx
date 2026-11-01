@@ -10,12 +10,23 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import { IconBook } from "@tabler/icons-react"
 
 export function MethodologyModal() {
   return (
     <Dialog>
-      <DialogTrigger className="cursor-pointer text-xs text-primary underline transition-colors hover:text-primary/80">
-        Methodology & Math Model
+      <DialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+          />
+        }
+      >
+        <IconBook className="size-3.5" />
+        <span className="hidden sm:inline">Methodology</span>
       </DialogTrigger>
 
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
@@ -56,7 +67,7 @@ export function MethodologyModal() {
                   rel="noreferrer"
                   className="font-semibold text-foreground underline underline-offset-2 hover:text-primary"
                 >
-                  Liyab First Pay Survey ↗
+                  Liyab First Pay Survey
                 </a>
                 : ~3,000 entry-level responses detailing initial salaries,
                 universities, and offer negotiation outcomes.
@@ -68,16 +79,16 @@ export function MethodologyModal() {
                   rel="noreferrer"
                   className="font-semibold text-foreground underline underline-offset-2 hover:text-primary"
                 >
-                  Work/Career Path Info Sheet ↗
+                  Work/Career Path Info Sheet
                 </a>
                 : ~1,000 submissions detailing guaranteed bonus months
-                (13th–16th), allowances, leaves, and mentor advice quotes.
+                (13th-16th), allowances, leaves, and mentor advice quotes.
               </li>
             </ul>
             <p className="pt-1 text-[11px]">
               Sanitization boundary: Entries with monthly pay below ₱3,000 or
-              above ₱2,000,000 are rejected from numeric stats. Low samples ($n
-              &lt; 5$) receive explicit warning badges.
+              above ₱2,000,000 are rejected from numeric stats. Low samples (n
+              &lt; 5) receive explicit warning badges.
             </p>
           </TabsContent>
 
@@ -92,7 +103,7 @@ export function MethodologyModal() {
               (2018=100 base) annual averages:
             </p>
             <div className="rounded-md bg-muted p-2 font-mono text-[11px] text-foreground">
-              AdjustedSalary = NominalSalary × (CPI_2026 / CPI_year)
+              AdjustedSalary = NominalSalary * (CPI_2026 / CPI_year)
             </div>
             <p className="text-[11px]">
               Pre-2005 entries clamp to the 2005 CPI index (57.0); 2026 index is

@@ -25,19 +25,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Separator } from "@/components/ui/separator"
 import { formatPhp } from "@/lib/utils"
 import {
   IconSearch,
   IconDownload,
-  IconChevronDown,
   IconChevronRight,
   IconChevronLeft,
-  IconMessage2,
-  IconGift,
   IconArrowUp,
   IconArrowDown,
   IconTrendingUp,
@@ -60,12 +65,12 @@ const INDUSTRIES = [
 ]
 
 const SENIORITIES = [
-  { label: "All Experience Levels", value: "ALL" },
-  { label: "0 YOE (Entry Level)", value: "ENTRY_0" },
-  { label: "1–2 YOE (Junior)", value: "JUNIOR_1_2" },
-  { label: "3–5 YOE (Mid-Level)", value: "MID_3_5" },
-  { label: "6–9 YOE (Senior)", value: "SENIOR_6_9" },
-  { label: "10+ YOE (Staff / Lead)", value: "STAFF_LEAD_10_PLUS" },
+  { label: "All Experience", value: "ALL" },
+  { label: "0 YOE (Entry)", value: "ENTRY_0" },
+  { label: "1-2 YOE (Junior)", value: "JUNIOR_1_2" },
+  { label: "3-5 YOE (Mid-Level)", value: "MID_3_5" },
+  { label: "6-9 YOE (Senior)", value: "SENIOR_6_9" },
+  { label: "10+ YOE (Staff/Lead)", value: "STAFF_LEAD_10_PLUS" },
 ]
 
 const SOURCES = [
@@ -78,7 +83,6 @@ function TableContent() {
   const [records, setRecords] = useState<CareerRecord[]>([])
   const [loading, setLoading] = useState(true)
 
-  // URL-synchronized Query State
   const [params, setParams] = useTableFilterParams()
   const {
     searchQuery,
@@ -92,8 +96,9 @@ function TableContent() {
     pageSize,
   } = params
 
-  // Expandable row state
-  const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
+  const [selectedRecord, setSelectedRecord] = useState<CareerRecord | null>(
+    null
+  )
   const [searchInput, setSearchInput] = useState(searchQuery)
   const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery)
 
@@ -158,7 +163,6 @@ function TableContent() {
   }
 
   const handleDownloadCsv = () => {
-    // Export all matching records for the current filter criteria
     const allFiltered = queryTableRecords(records, {
       searchQuery,
       macroIndustry: industry,
@@ -176,7 +180,10 @@ function TableContent() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
-    link.setAttribute("download", `magkano-ba-filtered-salaries-${Date.now()}.csv`)
+    link.setAttribute(
+      "download",
+      `magkano-ba-filtered-salaries-${Date.now()}.csv`
+    )
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -184,130 +191,135 @@ function TableContent() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background font-sans text-foreground">
+    <div className="flex min-h-[100dvh] flex-col bg-background font-sans text-foreground">
       <NavigationHeader />
 
-      <main className="mx-auto w-full max-w-7xl flex-1 space-y-4 px-4 py-6">
-        {/* Page Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-4">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">
-              Raw Career Records Data Table
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Inspect, sort, filter, and export the verified 4,000+ community salary submissions.
-            </p>
+      {/* Sticky Table Filter Bar */}
+      <div className="sticky top-0 z-30 border-b border-border bg-background/95 px-4 py-2 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 lg:flex-nowrap">
+          <div className="flex flex-1 flex-wrap items-center gap-2 lg:flex-nowrap">
+            <div className="relative min-w-[180px] flex-1 sm:max-w-60">
+              <IconSearch className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                aria-label="Search job title, university, or advice"
+                placeholder="Search title, school, advice..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="h-8 bg-card pl-8 text-xs"
+              />
+            </div>
+
+            <div className="w-40 sm:w-44">
+              <Select
+                items={INDUSTRIES}
+                value={industry}
+                onValueChange={(val) => {
+                  setParams({ macroIndustry: val || "ALL", page: 1 })
+                }}
+              >
+                <SelectTrigger className="h-8 w-full bg-card text-xs">
+                  <SelectValue placeholder="Industry" />
+                </SelectTrigger>
+                <SelectContent>
+                  {INDUSTRIES.map((ind) => (
+                    <SelectItem
+                      key={ind.value}
+                      value={ind.value}
+                      className="text-xs"
+                    >
+                      {ind.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-38 sm:w-42">
+              <Select
+                items={SENIORITIES}
+                value={seniority}
+                onValueChange={(val) => {
+                  setParams({ seniorityBand: val || "ALL", page: 1 })
+                }}
+              >
+                <SelectTrigger className="h-8 w-full bg-card text-xs">
+                  <SelectValue placeholder="Experience" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SENIORITIES.map((sen) => (
+                    <SelectItem
+                      key={sen.value}
+                      value={sen.value}
+                      className="text-xs"
+                    >
+                      {sen.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-44">
+              <Select
+                items={SOURCES}
+                value={sourceSheet}
+                onValueChange={(val) => {
+                  setParams({ sourceSheet: val || "ALL", page: 1 })
+                }}
+              >
+                <SelectTrigger className="h-8 w-full bg-card text-xs">
+                  <SelectValue placeholder="Dataset Source" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SOURCES.map((src) => (
+                    <SelectItem
+                      key={src.value}
+                      value={src.value}
+                      className="text-xs"
+                    >
+                      {src.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setParams({ cpiAdjusted: !cpiAdjusted, page: 1 })}
+              className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors ${
+                cpiAdjusted
+                  ? "border-primary/30 bg-accent text-accent-foreground"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground"
+              }`}
+              title="Adjust pay to 2026 inflation using official PSA Consumer Price Index (134.5)"
+            >
+              <IconTrendingUp className="size-3.5" />
+              <span>{cpiAdjusted ? "2026 CPI" : "Nominal PHP"}</span>
+            </button>
+
             <Button
               variant="outline"
               size="sm"
               onClick={handleDownloadCsv}
-              className="h-8 gap-1.5 text-xs font-medium"
+              className="h-8 gap-1.5 bg-card text-xs font-medium"
             >
-              <IconDownload className="h-3.5 w-3.5" />
-              Export Filtered CSV ({queryResult.totalFiltered.toLocaleString()})
+              <IconDownload className="size-3.5" />
+              <span>
+                Export CSV ({queryResult.totalFiltered.toLocaleString()})
+              </span>
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Filter Controls Row */}
-        <div className="flex flex-wrap items-center gap-2.5 rounded-xl border border-border/70 bg-card/60 p-3 shadow-xs">
-          <div className="relative min-w-[200px] flex-1">
-            <IconSearch className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            <Input
-              type="text"
-              placeholder="Search by job title, university, or advice..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="h-8 pl-8 text-xs bg-background"
-            />
-          </div>
-
-          <div className="w-44">
-            <Select
-              items={INDUSTRIES}
-              value={industry}
-              onValueChange={(val) => {
-                setParams({ macroIndustry: val || "ALL", page: 1 })
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs bg-background">
-                <SelectValue placeholder="Industry" />
-              </SelectTrigger>
-              <SelectContent>
-                {INDUSTRIES.map((ind) => (
-                  <SelectItem key={ind.value} value={ind.value} className="text-xs">
-                    {ind.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="w-44">
-            <Select
-              items={SENIORITIES}
-              value={seniority}
-              onValueChange={(val) => {
-                setParams({ seniorityBand: val || "ALL", page: 1 })
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs bg-background">
-                <SelectValue placeholder="Experience" />
-              </SelectTrigger>
-              <SelectContent>
-                {SENIORITIES.map((sen) => (
-                  <SelectItem key={sen.value} value={sen.value} className="text-xs">
-                    {sen.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="w-48">
-            <Select
-              items={SOURCES}
-              value={sourceSheet}
-              onValueChange={(val) => {
-                setParams({ sourceSheet: val || "ALL", page: 1 })
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs bg-background">
-                <SelectValue placeholder="Dataset Source" />
-              </SelectTrigger>
-              <SelectContent>
-                {SOURCES.map((src) => (
-                  <SelectItem key={src.value} value={src.value} className="text-xs">
-                    {src.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 2026 PSA CPI Inflation Toggle (Off by default) */}
-          <button
-            type="button"
-            onClick={() => setParams({ cpiAdjusted: !cpiAdjusted, page: 1 })}
-            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
-              cpiAdjusted
-                ? "border-blue-500/30 bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold shadow-xs"
-                : "border-border/70 bg-card/60 text-muted-foreground hover:text-foreground"
-            }`}
-            title="Adjust pay to 2026 inflation using official PSA Consumer Price Index (134.5)"
-          >
-            <IconTrendingUp className="h-3.5 w-3.5" />
-            {cpiAdjusted ? "2026 CPI Adjusted" : "Nominal PHP"}
-          </button>
-        </div>
-
-        {/* Data Grid Table */}
-        <div className="rounded-xl border border-border/80 bg-card/60 shadow-xs backdrop-blur-xs overflow-hidden">
+      <main className="mx-auto w-full max-w-7xl flex-1 space-y-4 px-4 py-6">
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
           {loading ? (
-            <div className="p-6 space-y-3">
+            <div className="space-y-3 p-6">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
@@ -317,84 +329,84 @@ function TableContent() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-8"></TableHead>
+                <TableRow className="border-border hover:bg-transparent">
                   <TableHead
-                    className="cursor-pointer font-semibold text-xs text-foreground"
+                    className="cursor-pointer text-xs font-medium text-muted-foreground"
                     onClick={() => toggleSort("rawTitle")}
                   >
                     <div className="flex items-center gap-1">
-                      Job Title
+                      Role Title
                       {sortBy === "rawTitle" &&
                         (sortOrder === "asc" ? (
-                          <IconArrowUp className="h-3 w-3 text-primary" />
+                          <IconArrowUp className="size-3 text-primary" />
                         ) : (
-                          <IconArrowDown className="h-3 w-3 text-primary" />
+                          <IconArrowDown className="size-3 text-primary" />
                         ))}
                     </div>
                   </TableHead>
-                  <TableHead className="font-semibold text-xs text-foreground">
+                  <TableHead className="text-xs font-medium text-muted-foreground">
                     Industry
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer font-semibold text-xs text-foreground"
+                    className="cursor-pointer text-xs font-medium text-muted-foreground"
                     onClick={() => toggleSort("yoeYears")}
                   >
                     <div className="flex items-center gap-1">
-                      YOE / Band
+                      Experience
                       {sortBy === "yoeYears" &&
                         (sortOrder === "asc" ? (
-                          <IconArrowUp className="h-3 w-3 text-primary" />
+                          <IconArrowUp className="size-3 text-primary" />
                         ) : (
-                          <IconArrowDown className="h-3 w-3 text-primary" />
+                          <IconArrowDown className="size-3 text-primary" />
                         ))}
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer font-semibold text-xs text-foreground text-right"
+                    className="cursor-pointer text-right text-xs font-medium text-muted-foreground"
                     onClick={() => toggleSort("salary")}
                   >
                     <div className="flex items-center justify-end gap-1">
                       {cpiAdjusted ? "2026 CPI Pay" : "Monthly Gross"}
                       {sortBy === "salary" &&
                         (sortOrder === "asc" ? (
-                          <IconArrowUp className="h-3 w-3 text-primary" />
+                          <IconArrowUp className="size-3 text-primary" />
                         ) : (
-                          <IconArrowDown className="h-3 w-3 text-primary" />
+                          <IconArrowDown className="size-3 text-primary" />
                         ))}
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer font-semibold text-xs text-foreground"
+                    className="cursor-pointer text-xs font-medium text-muted-foreground"
                     onClick={() => toggleSort("schoolCanonical")}
                   >
                     <div className="flex items-center gap-1">
                       University
                       {sortBy === "schoolCanonical" &&
                         (sortOrder === "asc" ? (
-                          <IconArrowUp className="h-3 w-3 text-primary" />
+                          <IconArrowUp className="size-3 text-primary" />
                         ) : (
-                          <IconArrowDown className="h-3 w-3 text-primary" />
+                          <IconArrowDown className="size-3 text-primary" />
                         ))}
                     </div>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer font-semibold text-xs text-foreground text-center"
+                    className="cursor-pointer text-center text-xs font-medium text-muted-foreground"
                     onClick={() => toggleSort("cohortYear")}
                   >
                     <div className="flex items-center justify-center gap-1">
                       Year
                       {sortBy === "cohortYear" &&
                         (sortOrder === "asc" ? (
-                          <IconArrowUp className="h-3 w-3 text-primary" />
+                          <IconArrowUp className="size-3 text-primary" />
                         ) : (
-                          <IconArrowDown className="h-3 w-3 text-primary" />
+                          <IconArrowDown className="size-3 text-primary" />
                         ))}
                     </div>
                   </TableHead>
-                  <TableHead className="font-semibold text-xs text-foreground text-center">
+                  <TableHead className="text-center text-xs font-medium text-muted-foreground">
                     Source
                   </TableHead>
+                  <TableHead className="w-8"></TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -410,153 +422,66 @@ function TableContent() {
                   </TableRow>
                 ) : (
                   queryResult.records.map((r) => {
-                    const isExpanded = expandedRowId === r.id
+                    const isSelected = selectedRecord?.id === r.id
                     return (
-                      <React.Fragment key={r.id}>
-                        <TableRow
-                          className="cursor-pointer hover:bg-muted/40 transition-colors"
-                          onClick={() =>
-                            setExpandedRowId(isExpanded ? null : r.id)
+                      <TableRow
+                        key={r.id}
+                        tabIndex={0}
+                        onClick={() => setSelectedRecord(r)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault()
+                            setSelectedRecord(r)
                           }
-                        >
-                          <TableCell className="w-8 px-2 text-center">
-                            {isExpanded ? (
-                              <IconChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                            ) : (
-                              <IconChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                            )}
-                          </TableCell>
-                          <TableCell className="font-medium text-xs text-foreground">
-                            {r.rawTitle}
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {r.macroIndustry.replace(/_/g, " ")}
-                          </TableCell>
-                          <TableCell className="text-xs font-mono">
-                            {r.yoeYears} YOE · {r.seniorityBand.replace("_0", " (Entry)").replace("_1_2", " (Jr)").replace("_3_5", " (Mid)").replace("_6_9", " (Sr)").replace("_10_PLUS", " (Staff)")}
-                          </TableCell>
-                          <TableCell className="text-right font-mono font-bold text-xs text-foreground">
-                            {formatPhp(
-                              cpiAdjusted
-                                ? computeCompensationView(r, {
-                                    cpiAdjusted: true,
-                                    takeHomeParity: false,
-                                  })
-                                : r.nominalMonthlyGrossPhp.median
-                            )}
-                            {cpiAdjusted && (
-                              <div className="text-[10px] font-normal text-muted-foreground font-mono">
-                                nom: {formatPhp(r.nominalMonthlyGrossPhp.median)}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {r.schoolCanonical || "Unspecified"}
-                          </TableCell>
-                          <TableCell className="text-center font-mono text-xs text-muted-foreground">
-                            {r.cohortYear}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] py-0 font-mono ${
-                                r.sourceSheet === "LIYAB_FIRST_PAY"
-                                  ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                                  : "border-blue-500/30 text-blue-600 dark:text-blue-400"
-                              }`}
-                            >
-                              {r.sourceSheet === "LIYAB_FIRST_PAY"
-                                ? "Liyab"
-                                : "phcareers"}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-
-                        {/* Expanded Details Drawer */}
-                        {isExpanded && (
-                          <TableRow className="bg-muted/20 hover:bg-muted/20 border-b">
-                            <TableCell colSpan={8} className="p-4">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                                {/* Benefits breakdown */}
-                                <div className="space-y-2 rounded-lg border border-border/70 bg-card p-3">
-                                  <div className="flex items-center gap-1.5 font-semibold text-foreground">
-                                    <IconGift className="h-4 w-4 text-primary" />
-                                    <span>Benefits & Compensation Package</span>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-muted-foreground">
-                                    <div>
-                                      Guaranteed Months:{" "}
-                                      <span className="font-bold text-foreground">
-                                        {r.benefits.guaranteedMonths}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      Monthly Allowance:{" "}
-                                      <span className="font-bold text-foreground">
-                                        {formatPhp(r.benefits.monthlyAllowancePhp)}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      HMO Coverage:{" "}
-                                      <span className="font-bold text-foreground">
-                                        {r.benefits.hmoCoveragePhp
-                                          ? formatPhp(r.benefits.hmoCoveragePhp)
-                                          : "None / Not specified"}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      Vacation Leave:{" "}
-                                      <span className="font-bold text-foreground">
-                                        {r.benefits.vacationLeaveDays !== null
-                                          ? `${r.benefits.vacationLeaveDays} days`
-                                          : "Standard"}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      Negotiated:{" "}
-                                      <span className="font-bold text-foreground">
-                                        {r.negotiatedOffer === true
-                                          ? "Yes"
-                                          : r.negotiatedOffer === false
-                                          ? "No"
-                                          : "Not Tracked"}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      Work Scope:{" "}
-                                      <span className="font-bold text-foreground">
-                                        {r.workScope.replace(/_/g, " ")}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  {r.benefits.rawBenefitsSummary && (
-                                    <div className="border-t border-border/60 pt-1 text-[11px] text-muted-foreground">
-                                      <em>{r.benefits.rawBenefitsSummary}</em>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Mentor Advice Quote */}
-                                <div className="space-y-2 rounded-lg border border-border/70 bg-card p-3">
-                                  <div className="flex items-center gap-1.5 font-semibold text-foreground">
-                                    <IconMessage2 className="h-4 w-4 text-primary" />
-                                    <span>Mentor Advice Quote</span>
-                                  </div>
-                                  {r.mentorAdviceQuote ? (
-                                    <blockquote className="border-l-2 border-primary/50 pl-3 italic text-muted-foreground text-[11px] leading-relaxed">
-                                      &ldquo;{r.mentorAdviceQuote}&rdquo;
-                                    </blockquote>
-                                  ) : (
-                                    <p className="text-[11px] text-muted-foreground italic">
-                                      No advice quote submitted for this record.
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
+                        }}
+                        className={`cursor-pointer border-border/50 transition-colors focus-visible:bg-accent/40 focus-visible:outline-hidden ${
+                          isSelected ? "bg-accent/50" : "hover:bg-muted/40"
+                        }`}
+                      >
+                        <TableCell className="text-xs font-medium text-foreground">
+                          {r.rawTitle}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {r.macroIndustry.replace(/_/g, " ")}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs tabular-nums text-muted-foreground">
+                          {r.yoeYears} YOE
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-xs font-bold tabular-nums text-foreground">
+                          {formatPhp(
+                            cpiAdjusted
+                              ? computeCompensationView(r, {
+                                  cpiAdjusted: true,
+                                  takeHomeParity: false,
+                                })
+                              : r.nominalMonthlyGrossPhp.median
+                          )}
+                          {cpiAdjusted && (
+                            <div className="font-mono text-[10px] font-normal tabular-nums text-muted-foreground">
+                              nom: {formatPhp(r.nominalMonthlyGrossPhp.median)}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {r.schoolCanonical || "Unspecified"}
+                        </TableCell>
+                        <TableCell className="text-center font-mono text-xs tabular-nums text-muted-foreground">
+                          {r.cohortYear}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge
+                            variant="secondary"
+                            className="py-0 font-mono text-[10px]"
+                          >
+                            {r.sourceSheet === "LIYAB_FIRST_PAY"
+                              ? "Liyab"
+                              : "phcareers"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="w-8 px-2 text-right">
+                          <IconChevronRight className="size-3.5 text-muted-foreground" />
+                        </TableCell>
+                      </TableRow>
                     )
                   })
                 )}
@@ -565,37 +490,38 @@ function TableContent() {
           )}
 
           {/* Table Pagination Footer */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/80 bg-card/40 px-4 py-3 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/20 px-4 py-3 text-xs">
             <div className="text-muted-foreground">
               Showing{" "}
-              <span className="font-semibold text-foreground font-mono">
+              <span className="font-mono font-semibold tabular-nums text-foreground">
                 {queryResult.records.length > 0
                   ? (queryResult.page - 1) * queryResult.pageSize + 1
                   : 0}
               </span>{" "}
               to{" "}
-              <span className="font-semibold text-foreground font-mono">
+              <span className="font-mono font-semibold tabular-nums text-foreground">
                 {Math.min(
                   queryResult.page * queryResult.pageSize,
                   queryResult.totalFiltered
                 )}
               </span>{" "}
               of{" "}
-              <span className="font-semibold text-foreground font-mono">
+              <span className="font-mono font-semibold tabular-nums text-foreground">
                 {queryResult.totalFiltered.toLocaleString()}
               </span>{" "}
-              filtered records
+              records
             </div>
 
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <span>Rows:</span>
                 <select
+                  aria-label="Rows per page"
                   value={pageSize}
                   onChange={(e) => {
                     setParams({ pageSize: Number(e.target.value), page: 1 })
                   }}
-                  className="rounded border border-input bg-background px-1.5 py-0.5 text-xs text-foreground"
+                  className="rounded-md border border-input bg-background px-2 py-0.5 font-mono text-xs text-foreground"
                 >
                   <option value={25}>25</option>
                   <option value={50}>50</option>
@@ -609,11 +535,11 @@ function TableContent() {
                   size="sm"
                   disabled={page <= 1}
                   onClick={() => setParams({ page: page - 1 })}
-                  className="h-7 w-7 p-0"
+                  className="size-7 p-0"
                 >
-                  <IconChevronLeft className="h-3.5 w-3.5" />
+                  <IconChevronLeft className="size-3.5" />
                 </Button>
-                <span className="px-2 font-mono text-xs text-muted-foreground">
+                <span className="px-2 font-mono text-xs tabular-nums text-muted-foreground">
                   {queryResult.page} / {queryResult.totalPages}
                 </span>
                 <Button
@@ -621,22 +547,179 @@ function TableContent() {
                   size="sm"
                   disabled={page >= queryResult.totalPages}
                   onClick={() => setParams({ page: page + 1 })}
-                  className="h-7 w-7 p-0"
+                  className="size-7 p-0"
                 >
-                  <IconChevronRight className="h-3.5 w-3.5" />
+                  <IconChevronRight className="size-3.5" />
                 </Button>
               </div>
             </div>
           </div>
         </div>
       </main>
+
+      {/* Slide-Over Record Inspector Sheet */}
+      <Sheet
+        open={Boolean(selectedRecord)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedRecord(null)
+        }}
+      >
+        <SheetContent side="right" className="overflow-y-auto">
+          {selectedRecord && (
+            <>
+              <SheetHeader>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="font-mono text-[10px]">
+                    {selectedRecord.sourceSheet === "LIYAB_FIRST_PAY"
+                      ? "Liyab First Pay"
+                      : "r/phcareers"}
+                  </Badge>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    Cohort {selectedRecord.cohortYear}
+                  </span>
+                </div>
+                <SheetTitle className="mt-1 text-lg">
+                  {selectedRecord.rawTitle}
+                </SheetTitle>
+                <SheetDescription>
+                  {selectedRecord.roleFamily} /{" "}
+                  {selectedRecord.macroIndustry.replace(/_/g, " ")}
+                </SheetDescription>
+              </SheetHeader>
+
+              <Separator />
+
+              {/* Compensation Summary */}
+              <div className="grid grid-cols-2 divide-x divide-border rounded-xl border border-border bg-muted/20">
+                <div className="p-3.5">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    2026 CPI-Adjusted Gross
+                  </span>
+                  <div className="mt-1 font-mono text-lg font-bold tabular-nums text-primary">
+                    {formatPhp(
+                      computeCompensationView(selectedRecord, {
+                        cpiAdjusted: true,
+                        takeHomeParity: false,
+                      })
+                    )}
+                    /mo
+                  </div>
+                </div>
+                <div className="p-3.5">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    Nominal Reported Gross
+                  </span>
+                  <div className="mt-1 font-mono text-lg font-bold tabular-nums text-foreground">
+                    {formatPhp(selectedRecord.nominalMonthlyGrossPhp.median)}/mo
+                  </div>
+                </div>
+              </div>
+
+              {/* Package Metadata Ledger */}
+              <div className="space-y-2.5 text-xs">
+                <h4 className="font-semibold text-foreground">
+                  Compensation & Benefits Ledger
+                </h4>
+                <dl className="divide-y divide-border rounded-xl border border-border bg-card">
+                  <div className="flex items-center justify-between px-3.5 py-2.5">
+                    <dt className="text-muted-foreground">Experience</dt>
+                    <dd className="font-mono font-medium text-foreground">
+                      {selectedRecord.yoeYears} YOE
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between px-3.5 py-2.5">
+                    <dt className="text-muted-foreground">University</dt>
+                    <dd className="font-medium text-foreground">
+                      {selectedRecord.schoolCanonical || "Unspecified"}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between px-3.5 py-2.5">
+                    <dt className="text-muted-foreground">Employment Scope</dt>
+                    <dd className="font-mono text-foreground">
+                      {selectedRecord.workScope.replace(/_/g, " ")}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between px-3.5 py-2.5">
+                    <dt className="text-muted-foreground">Guaranteed Months</dt>
+                    <dd className="font-mono font-semibold text-foreground">
+                      {selectedRecord.benefits.guaranteedMonths} mos
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between px-3.5 py-2.5">
+                    <dt className="text-muted-foreground">Monthly Allowance</dt>
+                    <dd className="font-mono text-foreground">
+                      {formatPhp(selectedRecord.benefits.monthlyAllowancePhp)}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between px-3.5 py-2.5">
+                    <dt className="text-muted-foreground">HMO Coverage</dt>
+                    <dd className="font-mono text-foreground">
+                      {selectedRecord.benefits.hmoCoveragePhp
+                        ? formatPhp(selectedRecord.benefits.hmoCoveragePhp)
+                        : "Unspecified"}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between px-3.5 py-2.5">
+                    <dt className="text-muted-foreground">Vacation Leaves</dt>
+                    <dd className="font-mono text-foreground">
+                      {selectedRecord.benefits.vacationLeaveDays !== null
+                        ? `${selectedRecord.benefits.vacationLeaveDays} days`
+                        : "Standard"}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between px-3.5 py-2.5">
+                    <dt className="text-muted-foreground">Negotiated Offer</dt>
+                    <dd className="font-mono text-foreground">
+                      {selectedRecord.negotiatedOffer === true
+                        ? "Yes"
+                        : selectedRecord.negotiatedOffer === false
+                          ? "No"
+                          : "Not Tracked"}
+                    </dd>
+                  </div>
+                </dl>
+
+                {selectedRecord.benefits.rawBenefitsSummary && (
+                  <div className="rounded-xl border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+                    <span className="mb-1 block font-medium text-foreground">
+                      Raw Benefits Note
+                    </span>
+                    {selectedRecord.benefits.rawBenefitsSummary.replace(
+                      /[—–]/g,
+                      "-"
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Practitioner Advice Quote */}
+              <div className="space-y-2 text-xs">
+                <h4 className="font-semibold text-foreground">
+                  Practitioner Field Note
+                </h4>
+                {selectedRecord.mentorAdviceQuote ? (
+                  <blockquote className="rounded-xl border border-border bg-muted/20 p-3.5 leading-relaxed text-foreground/90 italic">
+                    &ldquo;
+                    {selectedRecord.mentorAdviceQuote.replace(/[—–]/g, "-")}
+                    &rdquo;
+                  </blockquote>
+                ) : (
+                  <p className="rounded-xl border border-border bg-muted/10 p-3.5 text-muted-foreground">
+                    No advice quote submitted for this record.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
 
 export default function TablePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+    <Suspense fallback={<div className="min-h-[100dvh] bg-background" />}>
       <TableContent />
     </Suspense>
   )

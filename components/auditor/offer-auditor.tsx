@@ -33,6 +33,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
   IconSparkles,
   IconKey,
   IconCheck,
@@ -76,10 +81,6 @@ export function OfferAuditor({
 
   const hasSavedKey = Boolean(apiKey.trim())
 
-  const handleClearKey = () => {
-    setApiKey("")
-  }
-
   const handleRunAudit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -87,7 +88,7 @@ export function OfferAuditor({
 
     if (!apiKey.trim()) {
       setError(
-        "Please provide your Gemini API key (BYOK). It stays strictly in your browser localStorage."
+        "Open the Gemini Key menu in the top-right corner of this panel to add your API key (stored locally in your browser)."
       )
       return
     }
@@ -110,7 +111,7 @@ export function OfferAuditor({
       )
 
       const result = await callGeminiAudit(apiKey.trim(), payload)
-      setAuditResult(result)
+      setAuditResult(result.replace(/[—–]/g, "-"))
     } catch (err: unknown) {
       setError(
         err instanceof Error
@@ -150,270 +151,310 @@ export function OfferAuditor({
     [takeHomeParity, monthlyOffer, workScope]
   )
 
-  // Determine offer tier visually relative to current slice
-  const getOfferTier = () => {
+  const getOfferTierLabel = () => {
     if (!currentStats.p50) return null
-    if (comparableOffer < currentStats.p25) {
-      return {
-        label: "Below P25 Floor",
-        color: "text-rose-600 border-rose-500/40 bg-rose-500/10",
-      }
-    }
-    if (comparableOffer <= currentStats.p75) {
-      return {
-        label: "Competitive Market Band",
-        color: "text-emerald-600 border-emerald-500/40 bg-emerald-500/10",
-      }
-    }
-    return {
-      label: "Top Quartile (> P75)",
-      color: "text-amber-600 border-amber-500/40 bg-amber-500/10",
-    }
+    if (comparableOffer < currentStats.p25) return "Below P25 Floor"
+    if (comparableOffer <= currentStats.p75) return "Middle 50% Market Band"
+    return "Top Quartile (> P75)"
   }
 
-  const tier = getOfferTier()
+  const tierLabel = getOfferTierLabel()
   const percentileRank = useMemo(
     () => computePercentileRank(salaryValues, comparableOffer),
     [salaryValues, comparableOffer]
   )
 
   return (
-    <Card className="border-border/70 bg-card/60 shadow-xs backdrop-blur-xs">
-      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 pb-2">
+    <Card className="overflow-hidden border-border bg-card shadow-none ring-0">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
         <div>
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-bold tracking-tight">
-              BYOK Gemini Grounded Offer & Path Auditor
-            </CardTitle>
-            <Badge
-              variant="outline"
-              className="gap-1 border-amber-500/30 bg-amber-500/10 font-mono text-[11px] text-amber-600 dark:text-amber-400"
-            >
-              <IconSparkles className="h-3 w-3 text-amber-500" /> Grounded AI
-            </Badge>
-          </div>
+          <CardTitle className="text-base font-semibold tracking-tight">
+            Grounded Offer & Career Path Auditor
+          </CardTitle>
           <CardDescription className="text-xs text-muted-foreground">
-            Audit your compensation package against verified dataset percentiles
-            and TRAIN/8% tax math without hallucinations. Key never leaves your
-            browser.
+            Compare any job offer against verified cohort percentiles, TRAIN/8%
+            tax math, and practitioner field notes.
           </CardDescription>
         </div>
-        {hasSavedKey && (
-          <button
-            type="button"
-            onClick={handleClearKey}
-            className="text-xs font-medium text-rose-600 hover:underline dark:text-rose-400"
-          >
-            Clear Saved API Key
-          </button>
-        )}
-      </CardHeader>
 
-      <CardContent className="space-y-4 pt-1">
-        {/* API Key Box */}
-        <div className="space-y-1.5 rounded-lg border border-border/70 bg-muted/20 p-3 text-xs">
-          <div className="flex items-center gap-1.5 font-medium text-foreground">
-            <IconKey className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>
-              Google Gemini API Key (Stored exclusively in browser
-              localStorage):
-            </span>
-          </div>
-          <div className="flex gap-2">
+        {/* Compact BYOK API Key Popover */}
+        <Popover>
+          <PopoverTrigger
+            render={
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 bg-background text-xs"
+              />
+            }
+          >
+            <IconKey
+              className={`size-3.5 ${
+                hasSavedKey ? "text-primary" : "text-muted-foreground"
+              }`}
+            />
+            <span>{hasSavedKey ? "Gemini Key Saved" : "Set Gemini Key"}</span>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80 space-y-3 p-3.5">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground">
+                  BYOK Gemini API Key
+                </span>
+                {hasSavedKey && (
+                  <button
+                    type="button"
+                    onClick={() => setApiKey("")}
+                    className="text-[11px] font-medium text-destructive hover:underline"
+                  >
+                    Clear key
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Stored strictly in your browser localStorage. Never sent to any
+                intermediary server.
+              </p>
+            </div>
             <Input
               type="password"
+              aria-label="Google Gemini API Key"
               placeholder="AIzaSy..."
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              className="h-8 flex-1 font-mono text-xs"
+              className="h-8 font-mono text-xs"
             />
-            <a
-              href="https://aistudio.google.com/app/apikey"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center rounded-md border border-border bg-background px-2.5 text-[11px] text-muted-foreground hover:text-foreground"
-            >
-              Get Free Key ↗
-            </a>
-          </div>
-        </div>
-
-        {/* Visual Benchmark Bar */}
-        {currentStats.p50 > 0 && (
-          <div className="space-y-2.5 rounded-lg border border-border/70 bg-muted/10 p-3 text-xs">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-foreground">
-                  Instant Deterministic Benchmark:
-                </span>
-                <span className="rounded bg-primary/15 px-1.5 py-0.5 font-mono text-[11px] font-bold text-primary">
-                  P{percentileRank} ({percentileRank}th Percentile)
-                </span>
-              </div>
-              {tier && (
-                <Badge
-                  variant="outline"
-                  className={`font-mono text-[11px] ${tier.color}`}
-                >
-                  {tier.label}
-                </Badge>
-              )}
+            <div className="flex items-center justify-between pt-1 text-[11px]">
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-primary underline underline-offset-2"
+              >
+                Get free key from Google AI Studio
+              </a>
             </div>
-            <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full bg-primary transition-all duration-300"
-                style={{
-                  width: `${Math.min(100, Math.max(5, percentileRank))}%`,
-                }}
+          </PopoverContent>
+        </Popover>
+      </CardHeader>
+
+      <CardContent className="p-0">
+        <div className="grid grid-cols-1 divide-y divide-border lg:grid-cols-12 lg:divide-x lg:divide-y-0">
+          {/* Left Column: Offer Form */}
+          <form
+            onSubmit={handleRunAudit}
+            className="space-y-4 p-5 lg:col-span-5"
+          >
+            <div className="space-y-1.5">
+              <label
+                htmlFor="audit-role"
+                className="block text-xs font-medium text-foreground"
+              >
+                Target Role / Job Title
+              </label>
+              <Input
+                id="audit-role"
+                type="text"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="h-8 text-xs"
+                required
               />
             </div>
-            <div className="flex justify-between font-mono text-[10px] text-muted-foreground">
-              <span>P25: {formatPhp(currentStats.p25)}</span>
-              <span>Median: {formatPhp(currentStats.p50)}</span>
-              <span>P75: {formatPhp(currentStats.p75)}</span>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="audit-yoe"
+                  className="block text-xs font-medium text-foreground"
+                >
+                  Experience (YOE)
+                </label>
+                <Input
+                  id="audit-yoe"
+                  type="number"
+                  min="0"
+                  max="40"
+                  step="0.5"
+                  value={yoe}
+                  onChange={(e) => setYoe(parseFloat(e.target.value) || 0)}
+                  className="h-8 font-mono text-xs"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="audit-offer"
+                  className="block text-xs font-medium text-foreground"
+                >
+                  Monthly Gross (PHP)
+                </label>
+                <Input
+                  id="audit-offer"
+                  type="number"
+                  min="3000"
+                  step="5000"
+                  value={monthlyOffer}
+                  onChange={(e) =>
+                    setMonthlyOffer(parseFloat(e.target.value) || 0)
+                  }
+                  className="h-8 font-mono text-xs"
+                  required
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-1 gap-2 border-t border-border/50 pt-2 font-mono text-[11px] sm:grid-cols-3">
-              <div>
-                <span className="text-muted-foreground">PH Local Net Eq: </span>
-                <strong className="text-foreground">
-                  {formatPhp(instantArbitrage.localMonthlyNetEquivalent)}/mo
-                </strong>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-foreground">
+                  Work Scope
+                </label>
+                <Select
+                  items={WORK_SCOPES}
+                  value={workScope}
+                  onValueChange={(val) => val && setWorkScope(val as WorkScope)}
+                >
+                  <SelectTrigger className="h-8 w-full text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {WORK_SCOPES.map((ws) => (
+                      <SelectItem
+                        key={ws.value}
+                        value={ws.value}
+                        className="text-xs"
+                      >
+                        {ws.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
-                <span className="text-muted-foreground">Remote Break-Even: </span>
-                <strong className="text-foreground">
-                  {formatPhp(instantArbitrage.remoteBreakEvenMonthlyGross)}/mo
-                </strong>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Remote 8% Net Eq: </span>
-                <strong className="text-foreground">
-                  {formatPhp(instantArbitrage.remoteMonthlyNetEquivalent)}/mo
-                </strong>
+
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="audit-school"
+                  className="block text-xs font-medium text-foreground"
+                >
+                  Alma Mater
+                </label>
+                <Input
+                  id="audit-school"
+                  type="text"
+                  value={school}
+                  onChange={(e) => setSchool(e.target.value)}
+                  className="h-8 text-xs"
+                />
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Form Grid */}
-        <form
-          onSubmit={handleRunAudit}
-          className="grid grid-cols-1 gap-3 sm:grid-cols-3"
-        >
-          <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">
-              Target Role / Job Title
-            </label>
-            <Input
-              type="text"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="h-8 text-xs"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">
-              Years of Experience (YOE)
-            </label>
-            <Input
-              type="number"
-              min="0"
-              max="40"
-              step="0.5"
-              value={yoe}
-              onChange={(e) => setYoe(parseFloat(e.target.value) || 0)}
-              className="h-8 font-mono text-xs"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">
-              Offered Monthly Gross (PHP)
-            </label>
-            <Input
-              type="number"
-              min="10000"
-              step="5000"
-              value={monthlyOffer}
-              onChange={(e) => setMonthlyOffer(parseFloat(e.target.value) || 0)}
-              className="h-8 font-mono text-xs"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">
-              Work Scope
-            </label>
-            <Select
-              items={WORK_SCOPES}
-              value={workScope}
-              onValueChange={(val) => val && setWorkScope(val as WorkScope)}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="PH_LOCAL" className="text-xs">
-                  PH Local Corporate
-                </SelectItem>
-                <SelectItem value="FOREIGN_REMOTE" className="text-xs">
-                  Foreign Remote Contractor
-                </SelectItem>
-                <SelectItem value="OVERSEAS_OFW" className="text-xs">
-                  Overseas (OFW)
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">
-              School / Alma Mater
-            </label>
-            <input
-              type="text"
-              value={school}
-              onChange={(e) => setSchool(e.target.value)}
-              className="h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs focus:ring-1 focus:ring-primary focus:outline-hidden"
-            />
-          </div>
-
-          <div className="flex items-end">
             <Button
               type="submit"
               disabled={loading}
               className="h-8 w-full gap-1.5 text-xs font-semibold"
             >
-              <IconSparkles className="h-3.5 w-3.5" />
-              {loading ? "Auditing with Gemini..." : "Audit My Offer"}
+              <IconSparkles className="size-3.5" />
+              <span>{loading ? "Auditing Offer..." : "Audit Offer"}</span>
             </Button>
-          </div>
-        </form>
 
-        {/* Error Alert */}
-        {error && (
-          <div className="flex items-center gap-2 rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300">
-            <IconAlertTriangle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+            {error && (
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+                <IconAlertTriangle className="mt-0.5 size-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+          </form>
 
-        {/* Audit Result Display */}
-        {auditResult && (
-          <div className="space-y-2 rounded-lg border border-border/80 bg-muted/10 p-4 text-xs leading-relaxed">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-              <IconCheck className="h-4 w-4" />
-              <span>Grounded Against 2026 CPI Benchmarks</span>
-            </div>
-            <div className="space-y-2 border-t border-border/40 pt-1 font-sans whitespace-pre-wrap text-foreground/90">
-              {auditResult}
+          {/* Right Column: Live Deterministic Standing & Grounded Audit Output */}
+          <div className="flex flex-col divide-y divide-border lg:col-span-7">
+            {currentStats.p50 > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 sm:divide-x sm:divide-border">
+                <div className="bg-accent/40 p-3.5">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    Cohort Standing
+                  </span>
+                  <div className="mt-1 font-mono text-xl font-bold tabular-nums text-primary">
+                    P{percentileRank}
+                  </div>
+                  {tierLabel && (
+                    <span className="mt-0.5 block text-[10px] font-medium text-foreground/80">
+                      {tierLabel}
+                    </span>
+                  )}
+                </div>
+
+                <div className="border-l border-border p-3.5 sm:border-l-0">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    Cohort Median (P50)
+                  </span>
+                  <div className="mt-1 font-mono text-sm font-bold tabular-nums text-foreground">
+                    {formatPhp(currentStats.p50)}/mo
+                  </div>
+                  <span className="mt-0.5 block font-mono text-[10px] tabular-nums text-muted-foreground">
+                    P25: {formatPhp(currentStats.p25)}
+                  </span>
+                </div>
+
+                <div className="border-t border-border p-3.5 sm:border-t-0">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    Local Net Take-Home
+                  </span>
+                  <div className="mt-1 font-mono text-sm font-bold tabular-nums text-foreground">
+                    {formatPhp(instantArbitrage.localMonthlyNetEquivalent)}/mo
+                  </div>
+                  <span className="mt-0.5 block font-mono text-[10px] tabular-nums text-muted-foreground">
+                    After TRAIN & SSS
+                  </span>
+                </div>
+
+                <div className="border-t border-l border-border p-3.5 sm:border-t-0 sm:border-l-0">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    Remote Break-Even
+                  </span>
+                  <div className="mt-1 font-mono text-sm font-bold tabular-nums text-foreground">
+                    {formatPhp(instantArbitrage.remoteBreakEvenMonthlyGross)}/mo
+                  </div>
+                  <span className="mt-0.5 block font-mono text-[10px] tabular-nums text-muted-foreground">
+                    8% flat tax parity
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex-1 p-5">
+              {auditResult ? (
+                <div className="space-y-2.5 text-xs leading-relaxed">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-primary">
+                      <IconCheck className="size-3.5" />
+                      Grounded Against 2026 CPI Benchmarks
+                    </span>
+                    <Badge variant="secondary" className="font-mono text-[10px]">
+                      n={currentStats.count} cohort records
+                    </Badge>
+                  </div>
+                  <div className="border-t border-border pt-2.5 font-sans whitespace-pre-wrap text-foreground/90">
+                    {auditResult}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex h-full min-h-[160px] flex-col items-center justify-center text-center">
+                  <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
+                    Instant deterministic percentile and tax parity metrics
+                    update live above as you type. Add a free Gemini API key and
+                    run <strong className="text-foreground">Audit Offer</strong>{" "}
+                    for a tailored negotiation memo grounded in{" "}
+                    <span className="font-mono text-foreground">
+                      {currentStats.count.toLocaleString()}
+                    </span>{" "}
+                    matching records.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   )

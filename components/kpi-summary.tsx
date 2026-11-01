@@ -7,13 +7,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip"
-import {
-  IconChartBar,
-  IconArrowsDiff,
-  IconTrendingUp,
-  IconGlobe,
-  IconInfoCircle,
-} from "@tabler/icons-react"
+import { IconInfoCircle } from "@tabler/icons-react"
 
 interface KpiSummaryProps {
   salaryStats: PercentileStats
@@ -35,7 +29,6 @@ export function KpiSummary({
   cpiAdjusted,
   takeHomeParity,
 }: KpiSummaryProps) {
-  // Compute break-even remote rate corresponding to current median local compensation
   const arbitrage = calculateNetArbitrage(
     salaryStats.p50 || 0,
     13,
@@ -43,105 +36,92 @@ export function KpiSummary({
     24000
   )
 
-  const cards = [
+  const metrics = [
     {
       title: "Median Compensation",
-      icon: IconChartBar,
       value: formatPhp(salaryStats.p50),
-      label: takeHomeParity ? "Monthly Net Take-Home" : "Gross Monthly Base",
-      badge: "P50 Benchmark",
-      badgeColor:
-        "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10",
-      accent: "text-emerald-500",
-      subtext: cpiAdjusted ? "2026 PSA CPI adjusted" : "Nominal reported rate",
+      tag: "P50",
+      sublabel: takeHomeParity ? "Monthly net take-home" : "Gross monthly base",
+      detail: cpiAdjusted ? "2026 CPI indexed" : "Nominal reported",
       tooltip:
-        "The 50th percentile (P50) baseline across current active filters.",
+        "50th percentile (P50) baseline across active filter selection.",
     },
     {
-      title: "Interquartile Spread",
-      icon: IconArrowsDiff,
-      value: `${formatPhp(salaryStats.p25)} – ${formatPhp(salaryStats.p75)}`,
-      label: "Middle 50% Cohort Range",
-      badge: "P25 Floor – P75 Top",
-      badgeColor:
-        "border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/10",
-      accent: "text-blue-500",
-      subtext: `IQR spread: ${formatPhp(salaryStats.p75 - salaryStats.p25)}`,
+      title: "Middle 50% Range",
+      value: `${formatPhp(salaryStats.p25)} - ${formatPhp(salaryStats.p75)}`,
+      tag: "P25-P75",
+      sublabel: "Interquartile cohort band",
+      detail: `Spread: ${formatPhp(Math.max(0, salaryStats.p75 - salaryStats.p25))}`,
       tooltip:
-        "The middle 50% distribution. Half of all respondents fall between P25 (entry floor) and P75 (top quartile).",
+        "Half of all respondents fall between the P25 floor and P75 upper quartile.",
     },
     {
-      title: "Remote Arbitrage Target",
-      icon: IconGlobe,
+      title: "Remote Break-Even",
       value: formatPhp(arbitrage.remoteBreakEvenMonthlyGross),
-      label: "Break-Even Contractor Gross",
-      badge: "8% Flat Tax Parity",
-      badgeColor:
-        "border-cyan-500/30 text-cyan-600 dark:text-cyan-400 bg-cyan-500/10",
-      accent: "text-cyan-500",
-      subtext: `Matches local net: ${formatPhp(arbitrage.localMonthlyNetEquivalent)}/mo`,
+      tag: "8% Tax",
+      sublabel: "Contractor gross parity",
+      detail: `Local net eq: ${formatPhp(arbitrage.localMonthlyNetEquivalent)}/mo`,
       tooltip:
-        "Gross rate a remote contractor must bill under 8% flat tax to match local net pay after TRAIN, 13th month, HMO, and allowances.",
+        "Monthly gross rate a remote contractor needs under 8% flat tax to match local net pay after TRAIN, 13th month, HMO, and allowances.",
     },
     {
-      title: "Negotiation Lift",
-      icon: IconTrendingUp,
+      title: "Negotiation Premium",
       value:
         negotiationLift.liftPercent > 0
           ? `+${negotiationLift.liftPercent.toFixed(1)}%`
-          : "—",
-      label: "Median Premium for Negotiators",
-      badge: `${negotiationLift.negotiatedCount} negotiated`,
-      badgeColor:
-        "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10",
-      accent: "text-amber-500",
-      subtext:
+          : "N/A",
+      tag: `n=${negotiationLift.negotiatedCount}`,
+      sublabel: "Entry-level counter-offer lift",
+      detail:
         negotiationLift.liftPhp > 0
           ? `+${formatPhp(negotiationLift.liftPhp)}/mo advantage`
           : "Insufficient sample",
       tooltip:
-        "Empirical compensation advantage achieved by candidates who negotiated their initial offer versus those who accepted without counter-offering.",
+        "Empirical median advantage earned by candidates who negotiated their initial offer versus those who accepted as-is.",
     },
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {cards.map((card) => {
-        const Icon = card.icon
-        return (
-          <div
-            key={card.title}
-            className="group relative overflow-hidden rounded-xl border border-border/70 bg-card/60 p-4 backdrop-blur-xs transition-all duration-150 hover:border-border hover:bg-card/90 hover:shadow-xs"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                <Icon className={`h-3.5 w-3.5 ${card.accent}`} />
-                {card.title}
-                <Tooltip>
-                  <TooltipTrigger className="cursor-help text-muted-foreground/60 hover:text-muted-foreground">
-                    <IconInfoCircle className="h-3 w-3" />
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs text-xs font-normal">
-                    {card.tooltip}
-                  </TooltipContent>
-                </Tooltip>
-              </span>
-              <span
-                className={`rounded-full border px-1.5 py-0.2 font-mono text-[10px] font-medium ${card.badgeColor}`}
-              >
-                {card.badge}
-              </span>
-            </div>
-            <div className="mt-2 font-mono text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
-              {card.value}
-            </div>
-            <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-              <span>{card.label}</span>
-              <span className="font-mono text-[11px] opacity-80">{card.subtext}</span>
-            </div>
+    <section
+      aria-label="Key compensation benchmarks"
+      className="grid grid-cols-1 divide-y divide-border overflow-hidden rounded-xl border border-border bg-card sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x"
+    >
+      {metrics.map((item, idx) => (
+        <div
+          key={item.title}
+          className={`flex flex-col justify-between p-4 ${
+            idx >= 2 ? "sm:border-t sm:border-border lg:border-t-0" : ""
+          } ${idx % 2 === 1 ? "sm:border-l sm:border-border lg:border-l-0" : ""}`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              {item.title}
+              <Tooltip>
+                <TooltipTrigger className="cursor-help text-muted-foreground/60 hover:text-foreground">
+                  <IconInfoCircle className="size-3.5" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-xs">
+                  {item.tooltip}
+                </TooltipContent>
+              </Tooltip>
+            </span>
+            <span className="rounded-md bg-accent px-1.5 py-0.5 font-mono text-[10px] font-medium text-accent-foreground">
+              {item.tag}
+            </span>
           </div>
-        )
-      })}
-    </div>
+
+          <div className="mt-2 font-mono text-xl font-bold tracking-tight tabular-nums text-foreground sm:text-2xl">
+            {item.value}
+          </div>
+
+          <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+            <span className="truncate">{item.sublabel}</span>
+            <span className="shrink-0 font-mono tabular-nums text-foreground/80">
+              {item.detail}
+            </span>
+          </div>
+        </div>
+      ))}
+    </section>
   )
 }

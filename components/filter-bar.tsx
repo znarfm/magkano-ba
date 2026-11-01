@@ -15,7 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
 import {
   IconSearch,
   IconBuilding,
@@ -23,8 +32,7 @@ import {
   IconReceipt2,
   IconTrendingUp,
   IconRotateClockwise,
-  IconSchool,
-  IconUserScan,
+  IconAdjustmentsHorizontal,
 } from "@tabler/icons-react"
 
 interface FilterBarProps {
@@ -55,12 +63,12 @@ const INDUSTRIES: { label: string; value: MacroIndustry | "ALL" }[] = [
 ]
 
 const SENIORITIES: { label: string; value: SeniorityBand | "ALL" }[] = [
-  { label: "All Experience Levels", value: "ALL" },
-  { label: "0 YOE · Entry Level", value: "ENTRY_0" },
-  { label: "1–2 YOE · Junior", value: "JUNIOR_1_2" },
-  { label: "3–5 YOE · Mid-Level", value: "MID_3_5" },
-  { label: "6–9 YOE · Senior", value: "SENIOR_6_9" },
-  { label: "10+ YOE · Staff / Lead", value: "STAFF_LEAD_10_PLUS" },
+  { label: "All Experience", value: "ALL" },
+  { label: "0 YOE (Entry)", value: "ENTRY_0" },
+  { label: "1-2 YOE (Junior)", value: "JUNIOR_1_2" },
+  { label: "3-5 YOE (Mid-Level)", value: "MID_3_5" },
+  { label: "6-9 YOE (Senior)", value: "SENIOR_6_9" },
+  { label: "10+ YOE (Staff/Lead)", value: "STAFF_LEAD_10_PLUS" },
 ]
 
 const SCHOOL_TIERS: { label: string; value: SchoolTierGroup | "ALL" }[] = [
@@ -73,11 +81,13 @@ const SCHOOL_TIERS: { label: string; value: SchoolTierGroup | "ALL" }[] = [
 ]
 
 const SCOPES: { label: string; value: WorkScope }[] = [
-  { label: "PH Local", value: "PH_LOCAL" },
-  { label: "Foreign Remote", value: "FOREIGN_REMOTE" },
+  { label: "PH Local Corporate", value: "PH_LOCAL" },
+  { label: "Foreign Remote Contractor", value: "FOREIGN_REMOTE" },
   { label: "Likely Remote (High Earner)", value: "LIKELY_REMOTE_INTL" },
   { label: "Overseas (OFW)", value: "OVERSEAS_OFW" },
 ]
+
+const DEFAULT_SCOPES_KEY = "FOREIGN_REMOTE,PH_LOCAL"
 
 export function FilterBar({
   filter,
@@ -127,15 +137,21 @@ export function FilterBar({
     }
   }
 
+  const scopesModified =
+    [...filter.workScopes].sort().join(",") !== DEFAULT_SCOPES_KEY
+
+  const extraFilterCount =
+    (filter.roleFamily && filter.roleFamily !== "ALL" ? 1 : 0) +
+    (filter.schoolTier && filter.schoolTier !== "ALL" ? 1 : 0) +
+    (scopesModified ? 1 : 0)
+
   const isFiltered =
     Boolean(filter.searchQuery) ||
     filter.macroIndustry !== "ALL" ||
-    filter.roleFamily !== "ALL" ||
     filter.seniorityBand !== "ALL" ||
-    filter.schoolTier !== "ALL" ||
+    extraFilterCount > 0 ||
     !filter.cpiAdjusted ||
-    filter.takeHomeParity ||
-    filter.workScopes.length !== 2
+    filter.takeHomeParity
 
   const resetFilters = () => {
     onChange({
@@ -152,22 +168,23 @@ export function FilterBar({
   }
 
   return (
-    <div className="sticky top-0 z-30 border-b border-border/80 bg-background/90 px-4 py-2.5 shadow-xs backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2.5">
-        {/* Search & Select Filters */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <IconSearch className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
+    <div className="sticky top-0 z-30 border-b border-border bg-background/95 px-4 py-2 backdrop-blur-md">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 lg:flex-nowrap">
+        {/* Primary Inline Filters */}
+        <div className="flex flex-1 flex-wrap items-center gap-2 lg:flex-nowrap">
+          <div className="relative min-w-[170px] flex-1 sm:max-w-56">
+            <IconSearch className="pointer-events-none absolute top-1/2 left-2.5 z-10 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search title, school, or skill..."
+              aria-label="Search job title, university, or skill"
+              placeholder="Search role, school, skill..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="h-8 w-44 bg-card/60 pr-3 pl-8 text-xs placeholder:text-muted-foreground sm:w-56"
+              className="h-8 bg-card pr-2.5 pl-8 text-xs"
             />
           </div>
 
-          <div className="w-44 sm:w-52">
+          <div className="w-40 sm:w-44">
             <Select
               items={INDUSTRIES}
               value={filter.macroIndustry || "ALL"}
@@ -179,8 +196,8 @@ export function FilterBar({
                 })
               }
             >
-              <SelectTrigger className="h-8 border-input bg-card/60 text-xs gap-1.5">
-                <IconBuilding className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <SelectTrigger className="h-8 w-full gap-1.5 bg-card text-xs">
+                <IconBuilding className="size-3.5 shrink-0 text-muted-foreground" />
                 <SelectValue placeholder="All Industries" />
               </SelectTrigger>
               <SelectContent>
@@ -197,38 +214,7 @@ export function FilterBar({
             </Select>
           </div>
 
-          {roleFamilies.length > 0 && (
-            <div className="w-44 sm:w-52">
-              <Select
-                items={roleItems}
-                value={filter.roleFamily || "ALL"}
-                onValueChange={(val) =>
-                  onChange({
-                    ...filter,
-                    roleFamily: val || "ALL",
-                  })
-                }
-              >
-                <SelectTrigger className="h-8 border-input bg-card/60 text-xs gap-1.5">
-                  <IconUserScan className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <SelectValue placeholder="All Role Families" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roleItems.map((rf) => (
-                    <SelectItem
-                      key={rf.value}
-                      value={rf.value}
-                      className="text-xs"
-                    >
-                      {rf.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          <div className="w-40 sm:w-48">
+          <div className="w-38 sm:w-42">
             <Select
               items={SENIORITIES}
               value={filter.seniorityBand || "ALL"}
@@ -239,9 +225,9 @@ export function FilterBar({
                 })
               }
             >
-              <SelectTrigger className="h-8 border-input bg-card/60 text-xs gap-1.5">
-                <IconBriefcase className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <SelectValue placeholder="All Experience Levels" />
+              <SelectTrigger className="h-8 w-full gap-1.5 bg-card text-xs">
+                <IconBriefcase className="size-3.5 shrink-0 text-muted-foreground" />
+                <SelectValue placeholder="All Experience" />
               </SelectTrigger>
               <SelectContent>
                 {SENIORITIES.map((sen) => (
@@ -257,112 +243,182 @@ export function FilterBar({
             </Select>
           </div>
 
-          <div className="w-40 sm:w-48">
-            <Select
-              items={SCHOOL_TIERS}
-              value={filter.schoolTier || "ALL"}
-              onValueChange={(val) =>
-                onChange({
-                  ...filter,
-                  schoolTier: (val as SchoolTierGroup | "ALL") || "ALL",
-                })
+          {/* Secondary Facets Popover */}
+          <Popover>
+            <PopoverTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="h-8 gap-1.5 bg-card px-2.5 text-xs"
+                />
               }
             >
-              <SelectTrigger className="h-8 border-input bg-card/60 text-xs gap-1.5">
-                <IconSchool className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <SelectValue placeholder="All School Tiers" />
-              </SelectTrigger>
-              <SelectContent>
-                {SCHOOL_TIERS.map((st) => (
-                  <SelectItem
-                    key={st.value}
-                    value={st.value}
-                    className="text-xs"
+              <IconAdjustmentsHorizontal className="size-3.5 text-muted-foreground" />
+              <span>More Filters</span>
+              {extraFilterCount > 0 && (
+                <Badge
+                  variant="default"
+                  className="ml-0.5 h-4 min-w-4 px-1 font-mono text-[10px]"
+                >
+                  {extraFilterCount}
+                </Badge>
+              )}
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-76 space-y-3.5 p-3.5">
+              {roleFamilies.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-foreground">
+                    Role Family
+                  </label>
+                  <Select
+                    items={roleItems}
+                    value={filter.roleFamily || "ALL"}
+                    onValueChange={(val) =>
+                      onChange({
+                        ...filter,
+                        roleFamily: val || "ALL",
+                      })
+                    }
                   >
-                    {st.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                    <SelectTrigger className="h-8 w-full bg-background text-xs">
+                      <SelectValue placeholder="All Role Families" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roleItems.map((rf) => (
+                        <SelectItem
+                          key={rf.value}
+                          value={rf.value}
+                          className="text-xs"
+                        >
+                          {rf.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-foreground">
+                  University Tier
+                </label>
+                <Select
+                  items={SCHOOL_TIERS}
+                  value={filter.schoolTier || "ALL"}
+                  onValueChange={(val) =>
+                    onChange({
+                      ...filter,
+                      schoolTier: (val as SchoolTierGroup | "ALL") || "ALL",
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 w-full bg-background text-xs">
+                    <SelectValue placeholder="All School Tiers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SCHOOL_TIERS.map((st) => (
+                      <SelectItem
+                        key={st.value}
+                        value={st.value}
+                        className="text-xs"
+                      >
+                        {st.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-foreground">
+                    Employment Scope
+                  </span>
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    Min 1 active
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {SCOPES.map((sc) => {
+                    const checked = filter.workScopes.includes(sc.value)
+                    return (
+                      <label
+                        key={sc.value}
+                        className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs hover:bg-muted/60"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => toggleScope(sc.value)}
+                        />
+                        <span className="text-foreground">{sc.label}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {isFiltered && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={resetFilters}
+              className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <IconRotateClockwise className="size-3" />
+              <span>Reset</span>
+            </Button>
+          )}
         </div>
 
-        {/* Work Scope Badges & Analytical Toggles */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Work Scopes Segmented Group */}
-          <div className="flex items-center rounded-md border border-border/70 bg-muted/40 p-0.5">
-            {SCOPES.map((sc) => {
-              const active = filter.workScopes.includes(sc.value)
-              return (
-                <button
-                  key={sc.value}
-                  type="button"
-                  onClick={() => toggleScope(sc.value)}
-                  className={`rounded-sm px-2 py-1 text-[11px] font-medium transition-colors ${
-                    active
-                      ? "bg-background text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {sc.label}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Analytical Segmented Group */}
-          <div className="flex items-center rounded-md border border-border/70 bg-muted/40 p-0.5">
+        {/* Economic Toggles & Sample Count */}
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
             <button
               type="button"
-              title="Adjust compensation for 2026 inflation using PSA CPI index"
+              title="Adjust compensation to 2026 purchasing power using PSA CPI (134.5)"
               onClick={() =>
                 onChange({ ...filter, cpiAdjusted: !filter.cpiAdjusted })
               }
-              className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[11px] font-medium transition-colors ${
+              className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
                 filter.cpiAdjusted
-                  ? "bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold shadow-xs"
+                  ? "bg-accent text-accent-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <IconTrendingUp className="h-3 w-3" />
-              {filter.cpiAdjusted ? "2026 Inflation" : "Nominal"}
+              <IconTrendingUp className="size-3" />
+              <span>{filter.cpiAdjusted ? "2026 CPI" : "Nominal"}</span>
             </button>
             <button
               type="button"
-              title="Estimate take-home pay after statutory deductions (SSS/PhilHealth/Pag-IBIG) and TRAIN taxes"
+              title="Estimate monthly net take-home pay after TRAIN tax and statutory deductions"
               onClick={() =>
                 onChange({ ...filter, takeHomeParity: !filter.takeHomeParity })
               }
-              className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[11px] font-medium transition-colors ${
+              className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
                 filter.takeHomeParity
-                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold shadow-xs"
+                  ? "bg-accent text-accent-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <IconReceipt2 className="h-3 w-3" />
-              {filter.takeHomeParity ? "After Tax" : "Gross"}
+              <IconReceipt2 className="size-3" />
+              <span>{filter.takeHomeParity ? "Net Pay" : "Gross"}</span>
             </button>
           </div>
 
-          {/* Reset Filters Action */}
-          {isFiltered && (
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-card/60 px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <IconRotateClockwise className="h-3 w-3" />
-              Reset
-            </button>
-          )}
-
-          {/* Filtered Record Count */}
-          <div className="rounded-md border border-border/60 bg-muted/30 px-2 py-1 font-mono text-[11px] text-muted-foreground">
+          <div className="rounded-lg border border-border/80 bg-card px-2.5 py-1 font-mono text-[11px] tabular-nums text-muted-foreground">
             <span className="font-semibold text-foreground">
               {filteredCount.toLocaleString()}
             </span>
-            {" / "}
-            <span>{totalCount.toLocaleString()} rows</span>
+            <span className="text-muted-foreground/70">
+              {" / "}
+              {totalCount.toLocaleString()}
+            </span>
           </div>
         </div>
       </div>

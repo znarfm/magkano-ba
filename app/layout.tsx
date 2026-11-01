@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Geist_Mono, Inter, Instrument_Sans } from "next/font/google"
+import { Geist, Geist_Mono, Instrument_Sans } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
@@ -11,7 +11,7 @@ const instrumentSansHeading = Instrument_Sans({
   display: "swap",
 })
 
-const inter = Inter({
+const geistSans = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
@@ -95,7 +95,7 @@ export default function RootLayout({
         "antialiased",
         "font-sans",
         fontMono.variable,
-        inter.variable,
+        geistSans.variable,
         instrumentSansHeading.variable
       )}
     >

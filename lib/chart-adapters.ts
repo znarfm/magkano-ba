@@ -51,9 +51,9 @@ export interface IndustryBenefitsPoint {
 
 const BAND_CONFIG: { key: SeniorityBand; label: string }[] = [
   { key: "ENTRY_0", label: "0 YOE (Entry)" },
-  { key: "JUNIOR_1_2", label: "1–2 YOE (Junior)" },
-  { key: "MID_3_5", label: "3–5 YOE (Mid)" },
-  { key: "SENIOR_6_9", label: "6–9 YOE (Senior)" },
+  { key: "JUNIOR_1_2", label: "1-2 YOE (Junior)" },
+  { key: "MID_3_5", label: "3-5 YOE (Mid)" },
+  { key: "SENIOR_6_9", label: "6-9 YOE (Senior)" },
   { key: "STAFF_LEAD_10_PLUS", label: "10+ YOE (Staff)" },
 ]
 
