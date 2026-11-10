@@ -88,8 +88,22 @@ const SCOPES: { label: string; value: WorkScope }[] = [
   { label: "Overseas (OFW)", value: "OVERSEAS_OFW" },
 ]
 
+const DATASET_SOURCES: {
+  label: string
+  value: "ALL" | "LIYAB_FIRST_PAY" | "CAREER_PATH_INFO"
+}[] = [
+  { label: "All Datasets", value: "ALL" },
+  { label: "Liyab First Pay", value: "LIYAB_FIRST_PAY" },
+  { label: "r/phcareers", value: "CAREER_PATH_INFO" },
+]
+
 const DEFAULT_SCOPES_KEY = "FOREIGN_REMOTE,PH_LOCAL"
 
+/**
+ * Sticky multi-faceted filter toolbar providing real-time full-text search,
+ * industry / seniority dropdowns, dataset source, university tiers, work scope filters,
+ * and macroeconomic toggles (2026 CPI inflation adjustment and net take-home pay).
+ */
 export function FilterBar({
   filter,
   onChange,
@@ -150,6 +164,9 @@ export function FilterBar({
     return () => clearTimeout(timer)
   }, [searchInput, onChange])
 
+  /**
+   * Toggles inclusion of an employment work scope, maintaining at least one active scope.
+   */
   const toggleScope = (scope: WorkScope) => {
     const exists = filter.workScopes.includes(scope)
     const nextScopes = exists
@@ -166,16 +183,21 @@ export function FilterBar({
   const extraFilterCount =
     (filter.roleFamily && filter.roleFamily !== "ALL" ? 1 : 0) +
     (filter.schoolTier && filter.schoolTier !== "ALL" ? 1 : 0) +
+    (filter.sourceSheet && filter.sourceSheet !== "ALL" ? 1 : 0) +
     (scopesModified ? 1 : 0)
 
   const isFiltered =
     Boolean(filter.searchQuery) ||
     filter.macroIndustry !== "ALL" ||
     filter.seniorityBand !== "ALL" ||
+    (filter.sourceSheet && filter.sourceSheet !== "ALL") ||
     extraFilterCount > 0 ||
     !filter.cpiAdjusted ||
     filter.takeHomeParity
 
+  /**
+   * Resets all filter facets and macroeconomic toggles back to default initial values.
+   */
   const resetFilters = () => {
     onChange({
       ...filter,
@@ -186,6 +208,7 @@ export function FilterBar({
       cpiAdjusted: true,
       takeHomeParity: false,
       schoolTier: "ALL",
+      sourceSheet: "ALL",
       searchQuery: "",
     })
   }
@@ -363,6 +386,39 @@ export function FilterBar({
                         className="text-xs"
                       >
                         {st.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-foreground">
+                  Dataset Source
+                </label>
+                <Select
+                  items={DATASET_SOURCES}
+                  value={filter.sourceSheet || "ALL"}
+                  onValueChange={(val) =>
+                    onChange({
+                      ...filter,
+                      sourceSheet:
+                        (val as "ALL" | "LIYAB_FIRST_PAY" | "CAREER_PATH_INFO") ||
+                        "ALL",
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 w-full bg-background text-xs">
+                    <SelectValue placeholder="All Datasets" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DATASET_SOURCES.map((ds) => (
+                      <SelectItem
+                        key={ds.value}
+                        value={ds.value}
+                        className="text-xs"
+                      >
+                        {ds.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

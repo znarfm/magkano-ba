@@ -6,6 +6,7 @@ import type { CareerRecord } from "@/lib/types"
 import { useDashboardFilterParams } from "@/hooks/use-dashboard-filter-params"
 import {
   computeBenefitsMatrix,
+  matchesDashboardFilter,
   queryDashboardSlice,
   queryGranularSchoolStats,
 } from "@/lib/analytics"
@@ -73,13 +74,30 @@ const OfferAuditor = dynamic(
     loading: () => <Skeleton className="h-[340px] w-full rounded-xl" />,
   }
 )
+const RecordsTable = dynamic(
+  () => import("@/components/records-table").then((mod) => mod.RecordsTable),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[480px] w-full rounded-xl" />,
+  }
+)
 
+/**
+ * Primary workspace content component orchestrating dataset loading,
+ * multi-dimensional filtering, analytics generation, and active tab rendering.
+ */
 function DashboardContent() {
   const [records, setRecords] = useState<CareerRecord[]>([])
   const [loading, setLoading] = useState<boolean>(true)
 
-  const [filter, setFilter, activeTab, setActiveTab] =
-    useDashboardFilterParams()
+  const [
+    filter,
+    setFilter,
+    activeTab,
+    setActiveTab,
+    tableParams,
+    setTableParams,
+  ] = useDashboardFilterParams()
   const deferredFilter = useDeferredValue(filter)
 
   useEffect(() => {
@@ -115,6 +133,10 @@ function DashboardContent() {
     return queryDashboardSlice(records, deferredFilter, staticBenefitsMatrix)
   }, [records, deferredFilter, staticBenefitsMatrix])
 
+  const tableRecords = useMemo(() => {
+    return records.filter((r) => matchesDashboardFilter(r, deferredFilter))
+  }, [records, deferredFilter])
+
   const granularSchools = useMemo(() => {
     const stats = queryGranularSchoolStats(analytics.filteredRecords, {
       cpiAdjusted: deferredFilter.cpiAdjusted,
@@ -126,6 +148,8 @@ function DashboardContent() {
 
   const showFilterBar = activeTab !== "arbitrage"
   const showKpiSummary = activeTab === "curves" || activeTab === "schools"
+  const filteredCount =
+    activeTab === "table" ? tableRecords.length : analytics.filteredCount
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background font-sans text-foreground">
@@ -136,7 +160,7 @@ function DashboardContent() {
           filter={filter}
           onChange={setFilter}
           totalCount={records.length}
-          filteredCount={analytics.filteredCount}
+          filteredCount={filteredCount}
           roleFamilies={roleFamilies}
         />
       )}
@@ -208,6 +232,16 @@ function DashboardContent() {
                 takeHomeParity={filter.takeHomeParity}
               />
             )}
+
+            {activeTab === "table" && (
+              <RecordsTable
+                records={tableRecords}
+                totalCount={records.length}
+                filter={filter}
+                tableParams={tableParams}
+                onTableParamsChange={setTableParams}
+              />
+            )}
           </>
         )}
       </main>
@@ -244,6 +278,9 @@ function DashboardContent() {
   )
 }
 
+/**
+ * Root page component for the dashboard, wrapped in Suspense for client-side search parameter hydration.
+ */
 export default function DashboardPage() {
   return (
     <Suspense fallback={<div className="min-h-[100dvh] bg-background" />}>

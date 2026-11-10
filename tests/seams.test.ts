@@ -231,9 +231,14 @@ describe("Seam 3: Client Analytical Query & Percentile Engine", () => {
 
     const slice = queryDashboardSlice(mockRecords, {
       macroIndustry: "TECH_IT",
+      roleFamily: "ALL",
+      seniorityBand: "ALL",
       workScopes: ["PH_LOCAL"],
       cpiAdjusted: false,
       takeHomeParity: false,
+      schoolTier: "ALL",
+      sourceSheet: "ALL",
+      searchQuery: "",
     })
 
     expect(slice.filteredCount).toBe(2)
@@ -250,6 +255,32 @@ describe("Seam 3: Client Analytical Query & Percentile Engine", () => {
       p50: 25000,
       p75: 25000,
     })
+
+    const liyabSlice = queryDashboardSlice(mockRecords, {
+      macroIndustry: "ALL",
+      roleFamily: "ALL",
+      seniorityBand: "ALL",
+      workScopes: ["PH_LOCAL"],
+      cpiAdjusted: false,
+      takeHomeParity: false,
+      schoolTier: "ALL",
+      sourceSheet: "LIYAB_FIRST_PAY",
+      searchQuery: "",
+    })
+    expect(liyabSlice.filteredCount).toBe(2)
+
+    const phcareersSlice = queryDashboardSlice(mockRecords, {
+      macroIndustry: "ALL",
+      roleFamily: "ALL",
+      seniorityBand: "ALL",
+      workScopes: ["PH_LOCAL"],
+      cpiAdjusted: false,
+      takeHomeParity: false,
+      schoolTier: "ALL",
+      sourceSheet: "CAREER_PATH_INFO",
+      searchQuery: "",
+    })
+    expect(phcareersSlice.filteredCount).toBe(0)
   })
 })
 

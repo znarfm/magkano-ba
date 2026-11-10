@@ -112,6 +112,9 @@ export const FilterStateSchema = z.object({
   cpiAdjusted: z.boolean().default(true),
   takeHomeParity: z.boolean().default(false),
   schoolTier: z.union([SchoolTierGroupSchema, z.literal("ALL")]).default("ALL"),
+  sourceSheet: z
+    .enum(["ALL", "LIYAB_FIRST_PAY", "CAREER_PATH_INFO"])
+    .default("ALL"),
   searchQuery: z.string().default(""),
 })
 export type FilterState = z.infer<typeof FilterStateSchema>

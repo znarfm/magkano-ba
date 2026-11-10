@@ -2,12 +2,11 @@
 
 import React, { useCallback, useMemo } from "react"
 import Link from "next/link"
-import { usePathname, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { useTheme } from "next-themes"
 import { AppIcon } from "@/components/icons/app-icon"
 import { DashboardTab } from "@/hooks/use-dashboard-filter-params"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import {
   Tooltip,
   TooltipContent,
@@ -54,28 +53,32 @@ const DASHBOARD_VIEWS: {
     label: "Offer Auditor",
     icon: IconSparkles,
   },
+  {
+    tab: "table",
+    label: "Raw Data",
+    icon: IconTable,
+  },
 ]
 
+/**
+ * Header navigation component providing workspace view switching,
+ * persistent search param URL generation, theme toggling, and methodology dialog.
+ */
 export function NavigationHeader({
   activeTab = "curves",
   onTabChange,
 }: NavigationHeaderProps) {
-  const pathname = usePathname()
   const searchParams = useSearchParams()
   const { resolvedTheme, setTheme } = useTheme()
-  const isTablePage = pathname.startsWith("/table")
 
-  // Extract shared query parameters (q, industry, seniority, cpi) to preserve across routes
+  // Extract shared query parameters to preserve across navigation
   const sharedQueryString = useMemo(() => {
     const params = new URLSearchParams()
-    const q = searchParams.get("q")
-    if (q) params.set("q", q)
-    const industry = searchParams.get("industry")
-    if (industry && industry !== "ALL") params.set("industry", industry)
-    const seniority = searchParams.get("seniority")
-    if (seniority && seniority !== "ALL") params.set("seniority", seniority)
-    const cpi = searchParams.get("cpi")
-    if (cpi !== null) params.set("cpi", cpi)
+    for (const [key, val] of searchParams.entries()) {
+      if (key !== "tab") {
+        params.set(key, val)
+      }
+    }
     return params.toString()
   }, [searchParams])
 
@@ -90,10 +93,6 @@ export function NavigationHeader({
     },
     [sharedQueryString]
   )
-
-  const tableHref = useMemo(() => {
-    return sharedQueryString ? `/table?${sharedQueryString}` : "/table"
-  }, [sharedQueryString])
 
   const homeHref = useMemo(() => {
     return getDashboardHref("curves")
@@ -134,12 +133,12 @@ export function NavigationHeader({
           <Link
             href={homeHref}
             onClick={(e) => {
-              if (!isTablePage && onTabChange) {
+              if (onTabChange) {
                 e.preventDefault()
                 onTabChange("curves")
               }
             }}
-            aria-current={!isTablePage && activeTab === "curves" ? "page" : undefined}
+            aria-current={activeTab === "curves" ? "page" : undefined}
             className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-85"
           >
             <AppIcon className="size-6 shrink-0 rounded-md" />
@@ -165,9 +164,9 @@ export function NavigationHeader({
         >
           {DASHBOARD_VIEWS.map((view) => {
             const Icon = view.icon
-            const isActive = !isTablePage && activeTab === view.tab
+            const isActive = activeTab === view.tab
 
-            if (!isTablePage && onTabChange) {
+            if (onTabChange) {
               return (
                 <button
                   key={view.tab}
@@ -210,25 +209,6 @@ export function NavigationHeader({
               </Link>
             )
           })}
-
-          <Separator orientation="vertical" className="mx-0.5 h-4" />
-
-          <Link
-            href={tableHref}
-            aria-current={isTablePage ? "page" : undefined}
-            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
-              isTablePage
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <IconTable
-              className={`size-3.5 shrink-0 ${
-                isTablePage ? "text-primary" : "text-muted-foreground"
-              }`}
-            />
-            <span>Raw Data</span>
-          </Link>
         </nav>
 
         {/* Desktop Right Actions */}
