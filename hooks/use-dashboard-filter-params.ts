@@ -60,6 +60,12 @@ const VALID_SORT_COLUMNS: TableSortColumn[] = [
   "schoolCanonical",
 ]
 
+/**
+ * Central hook for synchronizing active tab, global dashboard filter facets,
+ * and raw data table sorting and pagination parameters with URL search params.
+ *
+ * @returns A tuple of `[filter, setFilter, activeTab, setActiveTab, tableParams, setTableParams]`.
+ */
 export function useDashboardFilterParams(): [
   FilterState,
   (updater: FilterState | ((prev: FilterState) => FilterState)) => void,

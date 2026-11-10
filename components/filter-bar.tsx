@@ -99,6 +99,11 @@ const DATASET_SOURCES: {
 
 const DEFAULT_SCOPES_KEY = "FOREIGN_REMOTE,PH_LOCAL"
 
+/**
+ * Sticky multi-faceted filter toolbar providing real-time full-text search,
+ * industry / seniority dropdowns, dataset source, university tiers, work scope filters,
+ * and macroeconomic toggles (2026 CPI inflation adjustment and net take-home pay).
+ */
 export function FilterBar({
   filter,
   onChange,
@@ -159,6 +164,9 @@ export function FilterBar({
     return () => clearTimeout(timer)
   }, [searchInput, onChange])
 
+  /**
+   * Toggles inclusion of an employment work scope, maintaining at least one active scope.
+   */
   const toggleScope = (scope: WorkScope) => {
     const exists = filter.workScopes.includes(scope)
     const nextScopes = exists
@@ -187,6 +195,9 @@ export function FilterBar({
     !filter.cpiAdjusted ||
     filter.takeHomeParity
 
+  /**
+   * Resets all filter facets and macroeconomic toggles back to default initial values.
+   */
   const resetFilters = () => {
     onChange({
       ...filter,

@@ -60,6 +60,10 @@ const DASHBOARD_VIEWS: {
   },
 ]
 
+/**
+ * Header navigation component providing workspace view switching,
+ * persistent search param URL generation, theme toggling, and methodology dialog.
+ */
 export function NavigationHeader({
   activeTab = "curves",
   onTabChange,

@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation"
 import { WORK_SCOPES } from "@/lib/types"
 
+/**
+ * Server-side redirect page that routes `/table` traffic to the unified
+ * workspace tab (`/?tab=table`), preserving explicit parameters and applying
+ * legacy table defaults for `cpi` (false) and `scopes` (all canonical scopes).
+ */
 export default async function TableRedirectPage(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {

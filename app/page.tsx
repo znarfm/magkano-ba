@@ -82,6 +82,10 @@ const RecordsTable = dynamic(
   }
 )
 
+/**
+ * Primary workspace content component orchestrating dataset loading,
+ * multi-dimensional filtering, analytics generation, and active tab rendering.
+ */
 function DashboardContent() {
   const [records, setRecords] = useState<CareerRecord[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -274,6 +278,9 @@ function DashboardContent() {
   )
 }
 
+/**
+ * Root page component for the dashboard, wrapped in Suspense for client-side search parameter hydration.
+ */
 export default function DashboardPage() {
   return (
     <Suspense fallback={<div className="min-h-[100dvh] bg-background" />}>

@@ -60,6 +60,10 @@ const PAGE_SIZES = [
   { label: "100", value: "100" },
 ]
 
+/**
+ * Interactive raw records data grid featuring multi-column sorting, pagination,
+ * dynamic compensation labeling, CSV export, and record detail drawer inspection.
+ */
 export function RecordsTable({
   records,
   totalCount,
@@ -118,6 +122,9 @@ export function RecordsTable({
     [sortedRecords, offset, pageSize]
   )
 
+  /**
+   * Toggles column sort order between ascending and descending, or sets new active sort column.
+   */
   const toggleSort = (col: TableSortColumn) => {
     if (sortBy === col) {
       onTableParamsChange({
@@ -129,6 +136,9 @@ export function RecordsTable({
     }
   }
 
+  /**
+   * Exports the entire active filtered record slice to an RFC-4180 compliant CSV file.
+   */
   const handleDownloadCsv = () => {
     const csvContent = exportRecordsToCsv(sortedRecords)
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
