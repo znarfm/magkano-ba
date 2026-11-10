@@ -162,6 +162,7 @@ describe("Zod Schema Boundary Tests", () => {
         expect(res.data.cpiAdjusted).toBe(true)
         expect(res.data.takeHomeParity).toBe(false)
         expect(res.data.macroIndustry).toBe("ALL")
+        expect(res.data.sourceSheet).toBe("ALL")
       }
     })
 
@@ -169,6 +170,22 @@ describe("Zod Schema Boundary Tests", () => {
       expect(FilterStateSchema.safeParse({ workScopes: [] }).success).toBe(
         false
       )
+    })
+
+    it("validates valid and invalid sourceSheet values", () => {
+      expect(
+        FilterStateSchema.safeParse({
+          workScopes: ["PH_LOCAL"],
+          sourceSheet: "LIYAB_FIRST_PAY",
+        }).success
+      ).toBe(true)
+
+      expect(
+        FilterStateSchema.safeParse({
+          workScopes: ["PH_LOCAL"],
+          sourceSheet: "INVALID_SOURCE",
+        }).success
+      ).toBe(false)
     })
   })
 })

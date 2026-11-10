@@ -2,7 +2,27 @@
 
 import { useCallback, useMemo } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { FilterState, MacroIndustry, SeniorityBand, SchoolTierGroup, WorkScope } from "@/lib/types"
+import {
+  FilterState,
+  MacroIndustry,
+  SeniorityBand,
+  SchoolTierGroup,
+  WorkScope,
+} from "@/lib/types"
+
+export type TableSortColumn =
+  | "salary"
+  | "cohortYear"
+  | "yoeYears"
+  | "rawTitle"
+  | "schoolCanonical"
+
+export interface TablePaginationParams {
+  sortBy: TableSortColumn
+  sortOrder: "asc" | "desc"
+  page: number
+  pageSize: number
+}
 
 const DEFAULT_FILTERS: FilterState = {
   macroIndustry: "ALL",
@@ -12,17 +32,45 @@ const DEFAULT_FILTERS: FilterState = {
   cpiAdjusted: true,
   takeHomeParity: false,
   schoolTier: "ALL",
+  sourceSheet: "ALL",
   searchQuery: "",
 }
 
-export type DashboardTab = "curves" | "arbitrage" | "schools" | "auditor"
-const VALID_TABS: DashboardTab[] = ["curves", "arbitrage", "schools", "auditor"]
+const DEFAULT_TABLE_PARAMS: TablePaginationParams = {
+  sortBy: "salary",
+  sortOrder: "desc",
+  page: 1,
+  pageSize: 25,
+}
+
+export type DashboardTab = "curves" | "arbitrage" | "schools" | "auditor" | "table"
+const VALID_TABS: DashboardTab[] = [
+  "curves",
+  "arbitrage",
+  "schools",
+  "auditor",
+  "table",
+]
+
+const VALID_SORT_COLUMNS: TableSortColumn[] = [
+  "salary",
+  "cohortYear",
+  "yoeYears",
+  "rawTitle",
+  "schoolCanonical",
+]
 
 export function useDashboardFilterParams(): [
   FilterState,
   (updater: FilterState | ((prev: FilterState) => FilterState)) => void,
   DashboardTab,
-  (nextTab: DashboardTab) => void
+  (nextTab: DashboardTab) => void,
+  TablePaginationParams,
+  (
+    updater:
+      | Partial<TablePaginationParams>
+      | ((prev: TablePaginationParams) => Partial<TablePaginationParams>)
+  ) => void,
 ] {
   const router = useRouter()
   const pathname = usePathname()
@@ -53,12 +101,19 @@ export function useDashboardFilterParams(): [
     const seniority = searchParams.get("seniority") ?? "ALL"
     const schoolTier = searchParams.get("schoolTier") ?? "ALL"
     const roleFamily = searchParams.get("roleFamily") ?? "ALL"
+    const sourceSheet = searchParams.get("source") ?? "ALL"
 
     const cpiParam = searchParams.get("cpi")
-    const cpiAdjusted = cpiParam !== null ? cpiParam === "true" || cpiParam === "1" : DEFAULT_FILTERS.cpiAdjusted
+    const cpiAdjusted =
+      cpiParam !== null
+        ? cpiParam === "true" || cpiParam === "1"
+        : DEFAULT_FILTERS.cpiAdjusted
 
     const parityParam = searchParams.get("parity")
-    const takeHomeParity = parityParam !== null ? parityParam === "true" || parityParam === "1" : DEFAULT_FILTERS.takeHomeParity
+    const takeHomeParity =
+      parityParam !== null
+        ? parityParam === "true" || parityParam === "1"
+        : DEFAULT_FILTERS.takeHomeParity
 
     const scopesParam = searchParams.get("scopes")
     let workScopes = DEFAULT_FILTERS.workScopes
@@ -78,6 +133,42 @@ export function useDashboardFilterParams(): [
       cpiAdjusted,
       takeHomeParity,
       schoolTier: schoolTier as SchoolTierGroup | "ALL",
+      sourceSheet: (sourceSheet as FilterState["sourceSheet"]) || "ALL",
+    }
+  }, [searchParams])
+
+  const tableParams = useMemo<TablePaginationParams>(() => {
+    const sortParam = searchParams.get("sort") as TableSortColumn | null
+    const sortBy =
+      sortParam && VALID_SORT_COLUMNS.includes(sortParam)
+        ? sortParam
+        : DEFAULT_TABLE_PARAMS.sortBy
+
+    const orderParam = searchParams.get("order")
+    const sortOrder: "asc" | "desc" =
+      orderParam === "asc" ? "asc" : DEFAULT_TABLE_PARAMS.sortOrder
+
+    const pageParam = searchParams.get("page")
+    const pageNum = pageParam ? parseInt(pageParam, 10) : DEFAULT_TABLE_PARAMS.page
+    const page =
+      Number.isFinite(pageNum) && pageNum > 0
+        ? pageNum
+        : DEFAULT_TABLE_PARAMS.page
+
+    const sizeParam = searchParams.get("pageSize")
+    const sizeNum = sizeParam
+      ? parseInt(sizeParam, 10)
+      : DEFAULT_TABLE_PARAMS.pageSize
+    const pageSize =
+      Number.isFinite(sizeNum) && sizeNum > 0
+        ? sizeNum
+        : DEFAULT_TABLE_PARAMS.pageSize
+
+    return {
+      sortBy,
+      sortOrder,
+      page,
+      pageSize,
     }
   }, [searchParams])
 
@@ -105,6 +196,9 @@ export function useDashboardFilterParams(): [
       if (next.roleFamily && next.roleFamily !== "ALL") {
         params.set("roleFamily", next.roleFamily)
       }
+      if (next.sourceSheet && next.sourceSheet !== "ALL") {
+        params.set("source", next.sourceSheet)
+      }
       if (next.cpiAdjusted !== DEFAULT_FILTERS.cpiAdjusted) {
         params.set("cpi", String(next.cpiAdjusted))
       }
@@ -113,17 +207,73 @@ export function useDashboardFilterParams(): [
       }
 
       const scopesSorted = [...next.workScopes].sort().join(",")
-      const defaultScopesSorted = [...DEFAULT_FILTERS.workScopes].sort().join(",")
+      const defaultScopesSorted = [...DEFAULT_FILTERS.workScopes]
+        .sort()
+        .join(",")
       if (scopesSorted !== defaultScopesSorted) {
         params.set("scopes", next.workScopes.join(","))
+      }
+
+      // Preserve table sort options, but reset page to 1 when filters change
+      if (tableParams.sortBy !== DEFAULT_TABLE_PARAMS.sortBy) {
+        params.set("sort", tableParams.sortBy)
+      }
+      if (tableParams.sortOrder !== DEFAULT_TABLE_PARAMS.sortOrder) {
+        params.set("order", tableParams.sortOrder)
+      }
+      if (tableParams.pageSize !== DEFAULT_TABLE_PARAMS.pageSize) {
+        params.set("pageSize", String(tableParams.pageSize))
+      }
+      // Note: page resets to 1 (omitted from URL)
+
+      const qs = params.toString()
+      const url = qs ? `${pathname}?${qs}` : pathname
+      router.replace(url, { scroll: false })
+    },
+    [filter, pathname, router, searchParams, tableParams]
+  )
+
+  const setTableParams = useCallback(
+    (
+      updater:
+        | Partial<TablePaginationParams>
+        | ((prev: TablePaginationParams) => Partial<TablePaginationParams>)
+    ) => {
+      const partial =
+        typeof updater === "function" ? updater(tableParams) : updater
+      const next = { ...tableParams, ...partial }
+      const params = new URLSearchParams(searchParams.toString())
+
+      if (next.sortBy !== DEFAULT_TABLE_PARAMS.sortBy) {
+        params.set("sort", next.sortBy)
+      } else {
+        params.delete("sort")
+      }
+
+      if (next.sortOrder !== DEFAULT_TABLE_PARAMS.sortOrder) {
+        params.set("order", next.sortOrder)
+      } else {
+        params.delete("order")
+      }
+
+      if (next.page !== DEFAULT_TABLE_PARAMS.page) {
+        params.set("page", String(next.page))
+      } else {
+        params.delete("page")
+      }
+
+      if (next.pageSize !== DEFAULT_TABLE_PARAMS.pageSize) {
+        params.set("pageSize", String(next.pageSize))
+      } else {
+        params.delete("pageSize")
       }
 
       const qs = params.toString()
       const url = qs ? `${pathname}?${qs}` : pathname
       router.replace(url, { scroll: false })
     },
-    [filter, pathname, router, searchParams]
+    [pathname, router, searchParams, tableParams]
   )
 
-  return [filter, setFilter, activeTab, setActiveTab]
+  return [filter, setFilter, activeTab, setActiveTab, tableParams, setTableParams]
 }

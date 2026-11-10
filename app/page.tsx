@@ -73,13 +73,26 @@ const OfferAuditor = dynamic(
     loading: () => <Skeleton className="h-[340px] w-full rounded-xl" />,
   }
 )
+const RecordsTable = dynamic(
+  () => import("@/components/records-table").then((mod) => mod.RecordsTable),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[480px] w-full rounded-xl" />,
+  }
+)
 
 function DashboardContent() {
   const [records, setRecords] = useState<CareerRecord[]>([])
   const [loading, setLoading] = useState<boolean>(true)
 
-  const [filter, setFilter, activeTab, setActiveTab] =
-    useDashboardFilterParams()
+  const [
+    filter,
+    setFilter,
+    activeTab,
+    setActiveTab,
+    tableParams,
+    setTableParams,
+  ] = useDashboardFilterParams()
   const deferredFilter = useDeferredValue(filter)
 
   useEffect(() => {
@@ -206,6 +219,16 @@ function DashboardContent() {
                 currentQuotes={analytics.mentorQuotes}
                 activeIndustry={filter.macroIndustry || "TECH_IT"}
                 takeHomeParity={filter.takeHomeParity}
+              />
+            )}
+
+            {activeTab === "table" && (
+              <RecordsTable
+                records={analytics.filteredRecords}
+                totalCount={records.length}
+                filter={filter}
+                tableParams={tableParams}
+                onTableParamsChange={setTableParams}
               />
             )}
           </>

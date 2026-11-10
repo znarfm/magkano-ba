@@ -167,6 +167,13 @@ export function matchesDashboardFilter(
   ) {
     return false
   }
+  if (
+    filter.sourceSheet &&
+    filter.sourceSheet !== "ALL" &&
+    r.sourceSheet !== filter.sourceSheet
+  ) {
+    return false
+  }
   if (filter.searchQuery && filter.searchQuery.trim() !== "") {
     const q = filter.searchQuery.toLowerCase()
     const match =
@@ -362,6 +369,7 @@ export interface TableQueryOptions {
   workScope?: string
   sourceSheet?: string
   cpiAdjusted?: boolean
+  takeHomeParity?: boolean
   sortBy?: "salary" | "cohortYear" | "yoeYears" | "rawTitle" | "schoolCanonical"
   sortOrder?: "asc" | "desc"
   page?: number
@@ -392,6 +400,7 @@ export function queryTableRecords(
     workScope = "ALL",
     sourceSheet = "ALL",
     cpiAdjusted = false,
+    takeHomeParity = false,
     sortBy = "salary",
     sortOrder = "desc",
     page = 1,
@@ -432,10 +441,10 @@ export function queryTableRecords(
   })
 
   // Sort
-  if (sortBy === "salary" && cpiAdjusted) {
+  if (sortBy === "salary" && (cpiAdjusted || takeHomeParity)) {
     const decorated = filtered.map((r) => ({
       r,
-      val: computeCompensationView(r, { cpiAdjusted: true, takeHomeParity: false }),
+      val: computeCompensationView(r, { cpiAdjusted, takeHomeParity }),
     }))
     decorated.sort((a, b) => (sortOrder === "asc" ? a.val - b.val : b.val - a.val))
     for (let i = 0; i < decorated.length; i++) {
