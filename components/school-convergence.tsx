@@ -126,6 +126,7 @@ export function SchoolConvergence({
             <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
               <button
                 type="button"
+                aria-pressed={viewMode === "granular"}
                 onClick={() => setViewMode("granular")}
                 className={`rounded-md px-2.5 py-0.5 text-xs font-medium transition-colors ${
                   viewMode === "granular"
@@ -137,6 +138,7 @@ export function SchoolConvergence({
               </button>
               <button
                 type="button"
+                aria-pressed={viewMode === "tiers"}
                 onClick={() => setViewMode("tiers")}
                 className={`rounded-md px-2.5 py-0.5 text-xs font-medium transition-colors ${
                   viewMode === "tiers"

@@ -1,12 +1,20 @@
 "use client"
 
-import React, { Suspense, useEffect, useMemo, useState } from "react"
+import React, {
+  Suspense,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import type { CareerRecord } from "@/lib/types"
 import {
   queryTableRecords,
   exportRecordsToCsv,
   TableQueryOptions,
 } from "@/lib/analytics"
+import { loadCareerRecords } from "@/lib/records-loader"
 import { useTableFilterParams } from "@/hooks/use-table-filter-params"
 import { computeCompensationView } from "@/lib/economics"
 import { NavigationHeader } from "@/components/navigation-header"
@@ -40,6 +48,7 @@ import { Separator } from "@/components/ui/separator"
 import { formatPhp } from "@/lib/utils"
 import {
   IconSearch,
+  IconX,
   IconDownload,
   IconChevronRight,
   IconChevronLeft,
@@ -79,11 +88,18 @@ const SOURCES = [
   { label: "r/phcareers (1,068)", value: "CAREER_PATH_INFO" },
 ]
 
+const PAGE_SIZES = [
+  { label: "25", value: "25" },
+  { label: "50", value: "50" },
+  { label: "100", value: "100" },
+]
+
 function TableContent() {
   const [records, setRecords] = useState<CareerRecord[]>([])
   const [loading, setLoading] = useState(true)
 
   const [params, setParams] = useTableFilterParams()
+  const deferredParams = useDeferredValue(params)
   const {
     searchQuery,
     macroIndustry: industry,
@@ -99,6 +115,7 @@ function TableContent() {
   const [selectedRecord, setSelectedRecord] = useState<CareerRecord | null>(
     null
   )
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const [searchInput, setSearchInput] = useState(searchQuery)
   const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery)
 
@@ -106,6 +123,27 @@ function TableContent() {
     setPrevSearchQuery(searchQuery)
     setSearchInput(searchQuery)
   }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const target = e.target as HTMLElement | null
+        const tagName = target?.tagName?.toLowerCase()
+        const isEditable =
+          tagName === "input" ||
+          tagName === "textarea" ||
+          tagName === "select" ||
+          target?.isContentEditable
+        if (!isEditable) {
+          e.preventDefault()
+          searchInputRef.current?.focus()
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -117,10 +155,9 @@ function TableContent() {
   }, [searchInput, searchQuery, setParams])
 
   useEffect(() => {
-    fetch("/data/records.json")
-      .then((res) => res.json())
+    loadCareerRecords()
       .then((data) => {
-        setRecords(Array.isArray(data) ? data : [])
+        setRecords(data)
         setLoading(false)
       })
       .catch((err) => {
@@ -131,28 +168,17 @@ function TableContent() {
 
   const queryResult = useMemo(() => {
     return queryTableRecords(records, {
-      searchQuery,
-      macroIndustry: industry,
-      seniorityBand: seniority,
-      sourceSheet,
-      cpiAdjusted,
-      sortBy,
-      sortOrder,
-      page,
-      pageSize,
+      searchQuery: deferredParams.searchQuery,
+      macroIndustry: deferredParams.macroIndustry,
+      seniorityBand: deferredParams.seniorityBand,
+      sourceSheet: deferredParams.sourceSheet,
+      cpiAdjusted: deferredParams.cpiAdjusted,
+      sortBy: deferredParams.sortBy,
+      sortOrder: deferredParams.sortOrder,
+      page: deferredParams.page,
+      pageSize: deferredParams.pageSize,
     })
-  }, [
-    records,
-    searchQuery,
-    industry,
-    seniority,
-    sourceSheet,
-    cpiAdjusted,
-    sortBy,
-    sortOrder,
-    page,
-    pageSize,
-  ])
+  }, [records, deferredParams])
 
   const toggleSort = (col: NonNullable<TableQueryOptions["sortBy"]>) => {
     if (sortBy === col) {
@@ -201,13 +227,28 @@ function TableContent() {
             <div className="relative min-w-[180px] flex-1 sm:max-w-60">
               <IconSearch className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
+                ref={searchInputRef}
                 type="text"
                 aria-label="Search job title, university, or advice"
                 placeholder="Search title, school, advice..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="h-8 bg-card pl-8 text-xs"
+                className="h-8 bg-card pr-8 pl-8 text-xs"
               />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchInput("")
+                    setParams({ searchQuery: "", page: 1 })
+                    searchInputRef.current?.focus()
+                  }}
+                  aria-label="Clear search"
+                  className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <IconX className="size-3.5" />
+                </button>
+              )}
             </div>
 
             <div className="w-40 sm:w-44">
@@ -318,6 +359,7 @@ function TableContent() {
       </div>
 
       <main className="mx-auto w-full max-w-7xl flex-1 space-y-4 px-4 py-6">
+        <h1 className="sr-only">Raw Philippine Compensation Records</h1>
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           {loading ? (
             <div className="space-y-3 p-6">
@@ -332,77 +374,127 @@ function TableContent() {
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead
-                    className="cursor-pointer text-xs font-medium text-muted-foreground"
-                    onClick={() => toggleSort("rawTitle")}
+                    aria-sort={
+                      sortBy === "rawTitle"
+                        ? sortOrder === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                    }
+                    className="text-xs font-medium text-muted-foreground"
                   >
-                    <div className="flex items-center gap-1">
-                      Role Title
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("rawTitle")}
+                      className="flex items-center gap-1 transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring rounded"
+                    >
+                      <span>Role Title</span>
                       {sortBy === "rawTitle" &&
                         (sortOrder === "asc" ? (
-                          <IconArrowUp className="size-3 text-primary" />
+                          <IconArrowUp className="size-3 text-primary" aria-hidden="true" />
                         ) : (
-                          <IconArrowDown className="size-3 text-primary" />
+                          <IconArrowDown className="size-3 text-primary" aria-hidden="true" />
                         ))}
-                    </div>
+                    </button>
                   </TableHead>
                   <TableHead className="text-xs font-medium text-muted-foreground">
                     Industry
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer text-xs font-medium text-muted-foreground"
-                    onClick={() => toggleSort("yoeYears")}
+                    aria-sort={
+                      sortBy === "yoeYears"
+                        ? sortOrder === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                    }
+                    className="text-xs font-medium text-muted-foreground"
                   >
-                    <div className="flex items-center gap-1">
-                      Experience
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("yoeYears")}
+                      className="flex items-center gap-1 transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring rounded"
+                    >
+                      <span>Experience</span>
                       {sortBy === "yoeYears" &&
                         (sortOrder === "asc" ? (
-                          <IconArrowUp className="size-3 text-primary" />
+                          <IconArrowUp className="size-3 text-primary" aria-hidden="true" />
                         ) : (
-                          <IconArrowDown className="size-3 text-primary" />
+                          <IconArrowDown className="size-3 text-primary" aria-hidden="true" />
                         ))}
-                    </div>
+                    </button>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer text-right text-xs font-medium text-muted-foreground"
-                    onClick={() => toggleSort("salary")}
+                    aria-sort={
+                      sortBy === "salary"
+                        ? sortOrder === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                    }
+                    className="text-right text-xs font-medium text-muted-foreground"
                   >
-                    <div className="flex items-center justify-end gap-1">
-                      {cpiAdjusted ? "2026 CPI Pay" : "Monthly Gross"}
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("salary")}
+                      className="ml-auto flex items-center justify-end gap-1 transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring rounded"
+                    >
+                      <span>{cpiAdjusted ? "2026 CPI Pay" : "Monthly Gross"}</span>
                       {sortBy === "salary" &&
                         (sortOrder === "asc" ? (
-                          <IconArrowUp className="size-3 text-primary" />
+                          <IconArrowUp className="size-3 text-primary" aria-hidden="true" />
                         ) : (
-                          <IconArrowDown className="size-3 text-primary" />
+                          <IconArrowDown className="size-3 text-primary" aria-hidden="true" />
                         ))}
-                    </div>
+                    </button>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer text-xs font-medium text-muted-foreground"
-                    onClick={() => toggleSort("schoolCanonical")}
+                    aria-sort={
+                      sortBy === "schoolCanonical"
+                        ? sortOrder === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                    }
+                    className="text-xs font-medium text-muted-foreground"
                   >
-                    <div className="flex items-center gap-1">
-                      University
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("schoolCanonical")}
+                      className="flex items-center gap-1 transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring rounded"
+                    >
+                      <span>University</span>
                       {sortBy === "schoolCanonical" &&
                         (sortOrder === "asc" ? (
-                          <IconArrowUp className="size-3 text-primary" />
+                          <IconArrowUp className="size-3 text-primary" aria-hidden="true" />
                         ) : (
-                          <IconArrowDown className="size-3 text-primary" />
+                          <IconArrowDown className="size-3 text-primary" aria-hidden="true" />
                         ))}
-                    </div>
+                    </button>
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer text-center text-xs font-medium text-muted-foreground"
-                    onClick={() => toggleSort("cohortYear")}
+                    aria-sort={
+                      sortBy === "cohortYear"
+                        ? sortOrder === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                    }
+                    className="text-center text-xs font-medium text-muted-foreground"
                   >
-                    <div className="flex items-center justify-center gap-1">
-                      Year
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("cohortYear")}
+                      className="mx-auto flex items-center justify-center gap-1 transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring rounded"
+                    >
+                      <span>Year</span>
                       {sortBy === "cohortYear" &&
                         (sortOrder === "asc" ? (
-                          <IconArrowUp className="size-3 text-primary" />
+                          <IconArrowUp className="size-3 text-primary" aria-hidden="true" />
                         ) : (
-                          <IconArrowDown className="size-3 text-primary" />
+                          <IconArrowDown className="size-3 text-primary" aria-hidden="true" />
                         ))}
-                    </div>
+                    </button>
                   </TableHead>
                   <TableHead className="text-center text-xs font-medium text-muted-foreground">
                     Source
@@ -516,18 +608,36 @@ function TableContent() {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <span>Rows:</span>
-                <select
-                  aria-label="Rows per page"
-                  value={pageSize}
-                  onChange={(e) => {
-                    setParams({ pageSize: Number(e.target.value), page: 1 })
-                  }}
-                  className="rounded-md border border-input bg-background px-2 py-0.5 font-mono text-xs text-foreground"
-                >
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
+                <div className="w-18">
+                  <Select
+                    items={PAGE_SIZES}
+                    value={String(pageSize)}
+                    onValueChange={(val) => {
+                      if (val) {
+                        setParams({ pageSize: Number(val), page: 1 })
+                      }
+                    }}
+                  >
+                    <SelectTrigger
+                      size="sm"
+                      aria-label="Rows per page"
+                      className="h-7 w-full bg-background font-mono text-xs text-foreground"
+                    >
+                      <SelectValue placeholder="25" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAGE_SIZES.map((ps) => (
+                        <SelectItem
+                          key={ps.value}
+                          value={ps.value}
+                          className="font-mono text-xs"
+                        >
+                          {ps.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex items-center gap-1">

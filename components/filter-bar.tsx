@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import {
   IconSearch,
+  IconX,
   IconBuilding,
   IconBriefcase,
   IconReceipt2,
@@ -103,6 +104,7 @@ export function FilterBar({
     ],
     [roleFamilies]
   )
+  const searchInputRef = React.useRef<HTMLInputElement>(null)
   const [searchInput, setSearchInput] = React.useState(filter.searchQuery || "")
   const [prevSearchQuery, setPrevSearchQuery] = React.useState(
     filter.searchQuery
@@ -117,6 +119,27 @@ export function FilterBar({
   React.useEffect(() => {
     filterRef.current = filter
   })
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const target = e.target as HTMLElement | null
+        const tagName = target?.tagName?.toLowerCase()
+        const isEditable =
+          tagName === "input" ||
+          tagName === "textarea" ||
+          tagName === "select" ||
+          target?.isContentEditable
+        if (!isEditable) {
+          e.preventDefault()
+          searchInputRef.current?.focus()
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -175,13 +198,28 @@ export function FilterBar({
           <div className="relative min-w-[170px] flex-1 sm:max-w-56">
             <IconSearch className="pointer-events-none absolute top-1/2 left-2.5 z-10 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               type="text"
               aria-label="Search job title, university, or skill"
               placeholder="Search role, school, skill..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="h-8 bg-card pr-2.5 pl-8 text-xs"
+              className="h-8 bg-card pr-8 pl-8 text-xs"
             />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput("")
+                  onChange({ ...filterRef.current, searchQuery: "" })
+                  searchInputRef.current?.focus()
+                }}
+                aria-label="Clear search"
+                className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <IconX className="size-3.5" />
+              </button>
+            )}
           </div>
 
           <div className="w-40 sm:w-44">

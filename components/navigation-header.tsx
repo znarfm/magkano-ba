@@ -1,8 +1,8 @@
 "use client"
 
-import React from "react"
+import React, { useCallback, useMemo } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { useTheme } from "next-themes"
 import { AppIcon } from "@/components/icons/app-icon"
 import { DashboardTab } from "@/hooks/use-dashboard-filter-params"
@@ -31,31 +31,26 @@ interface NavigationHeaderProps {
 
 const DASHBOARD_VIEWS: {
   tab: DashboardTab
-  href: string
   label: string
   icon: React.ComponentType<{ className?: string }>
 }[] = [
   {
     tab: "curves",
-    href: "/",
     label: "Benchmarks",
     icon: IconChartLine,
   },
   {
     tab: "schools",
-    href: "/?tab=schools",
     label: "Schools & Perks",
     icon: IconBuildingArch,
   },
   {
     tab: "arbitrage",
-    href: "/?tab=arbitrage",
     label: "Arbitrage",
     icon: IconScale,
   },
   {
     tab: "auditor",
-    href: "/?tab=auditor",
     label: "Offer Auditor",
     icon: IconSparkles,
   },
@@ -66,8 +61,43 @@ export function NavigationHeader({
   onTabChange,
 }: NavigationHeaderProps) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { resolvedTheme, setTheme } = useTheme()
   const isTablePage = pathname.startsWith("/table")
+
+  // Extract shared query parameters (q, industry, seniority, cpi) to preserve across routes
+  const sharedQueryString = useMemo(() => {
+    const params = new URLSearchParams()
+    const q = searchParams.get("q")
+    if (q) params.set("q", q)
+    const industry = searchParams.get("industry")
+    if (industry && industry !== "ALL") params.set("industry", industry)
+    const seniority = searchParams.get("seniority")
+    if (seniority && seniority !== "ALL") params.set("seniority", seniority)
+    const cpi = searchParams.get("cpi")
+    if (cpi !== null) params.set("cpi", cpi)
+    return params.toString()
+  }, [searchParams])
+
+  const getDashboardHref = useCallback(
+    (tab: DashboardTab) => {
+      const params = new URLSearchParams(sharedQueryString)
+      if (tab !== "curves") {
+        params.set("tab", tab)
+      }
+      const qs = params.toString()
+      return qs ? `/?${qs}` : "/"
+    },
+    [sharedQueryString]
+  )
+
+  const tableHref = useMemo(() => {
+    return sharedQueryString ? `/table?${sharedQueryString}` : "/table"
+  }, [sharedQueryString])
+
+  const homeHref = useMemo(() => {
+    return getDashboardHref("curves")
+  }, [getDashboardHref])
 
   const actions = (
     <>
@@ -102,13 +132,14 @@ export function NavigationHeader({
         {/* Top row: Brand + Mobile Actions */}
         <div className="flex h-14 items-center justify-between gap-2 md:h-auto">
           <Link
-            href="/"
+            href={homeHref}
             onClick={(e) => {
               if (!isTablePage && onTabChange) {
                 e.preventDefault()
                 onTabChange("curves")
               }
             }}
+            aria-current={!isTablePage && activeTab === "curves" ? "page" : undefined}
             className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-85"
           >
             <AppIcon className="size-6 shrink-0 rounded-md" />
@@ -141,6 +172,7 @@ export function NavigationHeader({
                 <button
                   key={view.tab}
                   type="button"
+                  aria-current={isActive ? "page" : undefined}
                   onClick={() => onTabChange(view.tab)}
                   className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
                     isActive
@@ -161,7 +193,8 @@ export function NavigationHeader({
             return (
               <Link
                 key={view.tab}
-                href={view.href}
+                href={getDashboardHref(view.tab)}
+                aria-current={isActive ? "page" : undefined}
                 className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
                   isActive
                     ? "bg-background text-foreground shadow-xs"
@@ -181,7 +214,8 @@ export function NavigationHeader({
           <Separator orientation="vertical" className="mx-0.5 h-4" />
 
           <Link
-            href="/table"
+            href={tableHref}
+            aria-current={isTablePage ? "page" : undefined}
             className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
               isTablePage
                 ? "bg-background text-foreground shadow-xs"

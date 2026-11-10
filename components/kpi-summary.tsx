@@ -18,6 +18,8 @@ interface KpiSummaryProps {
     nonNegotiatedMedian: number
     negotiatedCount: number
     nonNegotiatedCount: number
+    negotiatedStats?: { p25: number; p50: number; p75: number }
+    nonNegotiatedStats?: { p25: number; p50: number; p75: number }
   }
   cpiAdjusted: boolean
   takeHomeParity: boolean
@@ -68,7 +70,7 @@ export function KpiSummary({
       title: "Negotiation Premium",
       value:
         negotiationLift.liftPercent > 0
-          ? `+${negotiationLift.liftPercent.toFixed(1)}%`
+          ? `+${negotiationLift.liftPercent}%`
           : "N/A",
       tag: `n=${negotiationLift.negotiatedCount}`,
       sublabel: "Entry-level counter-offer lift",

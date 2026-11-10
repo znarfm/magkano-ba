@@ -33,7 +33,7 @@ interface NegotiationLiftProps {
     negotiatedCount: number
     nonNegotiatedCount: number
     negotiatedStats?: { p25: number; p50: number; p75: number }
-    nonNegotiatedStats?: { p25: number; p75: number; p50: number }
+    nonNegotiatedStats?: { p25: number; p50: number; p75: number }
   }
 }
 
@@ -49,19 +49,19 @@ export function NegotiationLift({ lift }: NegotiationLiftProps) {
     {
       category: "Negotiated",
       p25:
-        lift.negotiatedStats?.p25 || Math.round(lift.negotiatedMedian * 0.85),
+        lift.negotiatedStats?.p25 ?? Math.round(lift.negotiatedMedian * 0.85),
       median: lift.negotiatedMedian,
-      p75: lift.negotiatedStats?.p75 || Math.round(lift.negotiatedMedian * 1.2),
+      p75: lift.negotiatedStats?.p75 ?? Math.round(lift.negotiatedMedian * 1.2),
       count: lift.negotiatedCount,
     },
     {
       category: "Accepted Initial",
       p25:
-        lift.nonNegotiatedStats?.p25 ||
+        lift.nonNegotiatedStats?.p25 ??
         Math.round(lift.nonNegotiatedMedian * 0.85),
       median: lift.nonNegotiatedMedian,
       p75:
-        lift.nonNegotiatedStats?.p75 ||
+        lift.nonNegotiatedStats?.p75 ??
         Math.round(lift.nonNegotiatedMedian * 1.2),
       count: lift.nonNegotiatedCount,
     },

@@ -78,6 +78,7 @@ export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
         <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
           <button
             type="button"
+            aria-pressed={viewMode === "table"}
             onClick={() => setViewMode("table")}
             className={`rounded-md px-2.5 py-0.5 text-xs font-medium transition-colors ${
               viewMode === "table"
@@ -89,6 +90,7 @@ export function BenefitsMatrix({ matrix }: BenefitsMatrixProps) {
           </button>
           <button
             type="button"
+            aria-pressed={viewMode === "chart"}
             onClick={() => setViewMode("chart")}
             className={`rounded-md px-2.5 py-0.5 text-xs font-medium transition-colors ${
               viewMode === "chart"

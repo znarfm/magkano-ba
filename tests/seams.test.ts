@@ -240,6 +240,16 @@ describe("Seam 3: Client Analytical Query & Percentile Engine", () => {
     expect(slice.salaryStats.p50).toBe(27500)
     expect(slice.negotiationLift.liftPhp).toBe(5000) // 30,000 - 25,000
     expect(slice.negotiationLift.liftPercent).toBe(20)
+    expect(slice.negotiationLift.negotiatedStats).toEqual({
+      p25: 30000,
+      p50: 30000,
+      p75: 30000,
+    })
+    expect(slice.negotiationLift.nonNegotiatedStats).toEqual({
+      p25: 25000,
+      p50: 25000,
+      p75: 25000,
+    })
   })
 })
 

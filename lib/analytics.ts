@@ -25,6 +25,8 @@ export interface DashboardAnalytics {
     liftPercent: number
     negotiatedCount: number
     nonNegotiatedCount: number
+    negotiatedStats: { p25: number; p50: number; p75: number }
+    nonNegotiatedStats: { p25: number; p50: number; p75: number }
   }
   bySchoolTier: Record<SchoolTierGroup, PercentileStats>
   benefitsMatrix: Record<
@@ -266,6 +268,16 @@ export function queryDashboardSlice(
       liftPercent,
       negotiatedCount: statsYes.count,
       nonNegotiatedCount: statsNo.count,
+      negotiatedStats: {
+        p25: statsYes.p25,
+        p50: statsYes.p50,
+        p75: statsYes.p75,
+      },
+      nonNegotiatedStats: {
+        p25: statsNo.p25,
+        p50: statsNo.p50,
+        p75: statsNo.p75,
+      },
     },
     bySchoolTier,
     benefitsMatrix,

@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect, useMemo, useState } from "react"
+import { Suspense, useDeferredValue, useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import type { CareerRecord } from "@/lib/types"
 import { useDashboardFilterParams } from "@/hooks/use-dashboard-filter-params"
@@ -9,6 +9,7 @@ import {
   queryDashboardSlice,
   queryGranularSchoolStats,
 } from "@/lib/analytics"
+import { loadCareerRecords } from "@/lib/records-loader"
 import { prepareGranularSchoolData } from "@/lib/chart-adapters"
 import { FilterBar } from "@/components/filter-bar"
 import { MentorQuotesFeed } from "@/components/mentor-quotes"
@@ -39,26 +40,38 @@ const NetArbitrageSimulator = dynamic(
     import("@/components/net-arbitrage").then(
       (mod) => mod.NetArbitrageSimulator
     ),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[340px] w-full rounded-xl" />,
+  }
 )
 const SchoolConvergence = dynamic(
   () =>
     import("@/components/school-convergence").then(
       (mod) => mod.SchoolConvergence
     ),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[340px] w-full rounded-xl" />,
+  }
 )
 const BenefitsMatrix = dynamic(
   () =>
     import("@/components/benefits-matrix").then((mod) => mod.BenefitsMatrix),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[340px] w-full rounded-xl" />,
+  }
 )
 const OfferAuditor = dynamic(
   () =>
     import("@/components/auditor/offer-auditor").then(
       (mod) => mod.OfferAuditor
     ),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[340px] w-full rounded-xl" />,
+  }
 )
 
 function DashboardContent() {
@@ -67,30 +80,12 @@ function DashboardContent() {
 
   const [filter, setFilter, activeTab, setActiveTab] =
     useDashboardFilterParams()
+  const deferredFilter = useDeferredValue(filter)
 
   useEffect(() => {
-    fetch("/data/records.json")
-      .then((res) => res.json())
-      .then(async (raw) => {
-        if (process.env.NODE_ENV === "development") {
-          const [{ z }, { CareerRecordSchema }] = await Promise.all([
-            import("zod"),
-            import("@/lib/types"),
-          ])
-          const parsed = z.array(CareerRecordSchema).safeParse(raw)
-          if (parsed.success) {
-            setRecords(parsed.data)
-          } else {
-            console.error(
-              "Schema validation warning on records.json:",
-              parsed.error.issues.length,
-              "issues"
-            )
-            setRecords(Array.isArray(raw) ? (raw as CareerRecord[]) : [])
-          }
-        } else {
-          setRecords(Array.isArray(raw) ? (raw as CareerRecord[]) : [])
-        }
+    loadCareerRecords()
+      .then((data) => {
+        setRecords(data)
         setLoading(false)
       })
       .catch((err) => {
@@ -107,27 +102,27 @@ function DashboardContent() {
     const set = new Set<string>()
     for (const r of records) {
       if (
-        filter.macroIndustry === "ALL" ||
-        r.macroIndustry === filter.macroIndustry
+        deferredFilter.macroIndustry === "ALL" ||
+        r.macroIndustry === deferredFilter.macroIndustry
       ) {
         set.add(r.roleFamily)
       }
     }
     return Array.from(set).sort()
-  }, [records, filter.macroIndustry])
+  }, [records, deferredFilter.macroIndustry])
 
   const analytics = useMemo(() => {
-    return queryDashboardSlice(records, filter, staticBenefitsMatrix)
-  }, [records, filter, staticBenefitsMatrix])
+    return queryDashboardSlice(records, deferredFilter, staticBenefitsMatrix)
+  }, [records, deferredFilter, staticBenefitsMatrix])
 
   const granularSchools = useMemo(() => {
     const stats = queryGranularSchoolStats(analytics.filteredRecords, {
-      cpiAdjusted: filter.cpiAdjusted,
-      takeHomeParity: filter.takeHomeParity,
+      cpiAdjusted: deferredFilter.cpiAdjusted,
+      takeHomeParity: deferredFilter.takeHomeParity,
       minCount: 5,
     })
     return prepareGranularSchoolData(stats)
-  }, [analytics.filteredRecords, filter.cpiAdjusted, filter.takeHomeParity])
+  }, [analytics.filteredRecords, deferredFilter.cpiAdjusted, deferredFilter.takeHomeParity])
 
   const showFilterBar = activeTab !== "arbitrage"
   const showKpiSummary = activeTab === "curves" || activeTab === "schools"
@@ -147,6 +142,9 @@ function DashboardContent() {
       )}
 
       <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-6">
+        <h1 className="sr-only">
+          Magkano Ba? Philippine Compensation &amp; Career Intelligence Dashboard
+        </h1>
         {loading ? (
           <div className="space-y-6">
             <Skeleton className="h-24 w-full rounded-xl" />

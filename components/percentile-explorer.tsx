@@ -59,6 +59,7 @@ export function PercentileExplorer({
 }: PercentileExplorerProps) {
   const chartData = prepareSeniorityCurveData(bySeniority)
   const lowSampleBands = chartData.filter((d) => d.isLowSample)
+  const isEmpty = chartData.every((d) => d.count === 0)
 
   return (
     <Card className="border-border bg-card shadow-none ring-0">
@@ -91,27 +92,39 @@ export function PercentileExplorer({
       </CardHeader>
 
       <CardContent className="pt-4">
-        {lowSampleBands.length > 0 && (
-          <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
-            <IconAlertCircle className="size-3.5 shrink-0 text-primary" />
-            <span>Low sample size (&lt;5 records):</span>
-            {lowSampleBands.map((b) => (
-              <Badge
-                key={b.bandKey}
-                variant="secondary"
-                className="px-1.5 py-0 font-mono text-[10px]"
-              >
-                {b.label} (n={b.count})
-              </Badge>
-            ))}
+        {isEmpty ? (
+          <div className="flex h-[290px] flex-col items-center justify-center space-y-2 rounded-xl border border-dashed border-border p-6 text-center">
+            <IconAlertCircle className="size-6 text-muted-foreground" />
+            <div className="text-sm font-medium text-foreground">
+              No compensation records in this filter slice
+            </div>
+            <p className="max-w-sm text-xs text-muted-foreground">
+              Try adjusting your search query, industry, or university filters to see the career progression curve.
+            </p>
           </div>
-        )}
+        ) : (
+          <>
+            {lowSampleBands.length > 0 && (
+              <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+                <IconAlertCircle className="size-3.5 shrink-0 text-primary" />
+                <span>Low sample size (&lt;5 records):</span>
+                {lowSampleBands.map((b) => (
+                  <Badge
+                    key={b.bandKey}
+                    variant="secondary"
+                    className="px-1.5 py-0 font-mono text-[10px]"
+                  >
+                    {b.label} (n={b.count})
+                  </Badge>
+                ))}
+              </div>
+            )}
 
-        <ChartContainer config={chartConfig} className="h-[290px] w-full">
-          <ComposedChart
-            data={chartData}
-            margin={{ top: 10, right: 12, left: 4, bottom: 0 }}
-          >
+            <ChartContainer config={chartConfig} className="h-[290px] w-full">
+              <ComposedChart
+                data={chartData}
+                margin={{ top: 10, right: 12, left: 4, bottom: 0 }}
+              >
             <defs>
               <linearGradient id="iqrGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop
@@ -235,6 +248,8 @@ export function PercentileExplorer({
             />
           </ComposedChart>
         </ChartContainer>
+          </>
+        )}
       </CardContent>
     </Card>
   )
