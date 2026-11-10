@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { WORK_SCOPES } from "@/lib/types"
 
 export default async function TableRedirectPage(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -14,5 +15,12 @@ export default async function TableRedirectPage(props: {
       params.set(key, val)
     }
   }
+  if (!params.has("cpi")) {
+    params.set("cpi", "false")
+  }
+  if (!params.has("scopes")) {
+    params.set("scopes", WORK_SCOPES.join(","))
+  }
   redirect(`/?${params.toString()}`)
 }
+

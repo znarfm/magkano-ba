@@ -6,6 +6,7 @@ import type { CareerRecord } from "@/lib/types"
 import { useDashboardFilterParams } from "@/hooks/use-dashboard-filter-params"
 import {
   computeBenefitsMatrix,
+  matchesDashboardFilter,
   queryDashboardSlice,
   queryGranularSchoolStats,
 } from "@/lib/analytics"
@@ -128,6 +129,10 @@ function DashboardContent() {
     return queryDashboardSlice(records, deferredFilter, staticBenefitsMatrix)
   }, [records, deferredFilter, staticBenefitsMatrix])
 
+  const tableRecords = useMemo(() => {
+    return records.filter((r) => matchesDashboardFilter(r, deferredFilter))
+  }, [records, deferredFilter])
+
   const granularSchools = useMemo(() => {
     const stats = queryGranularSchoolStats(analytics.filteredRecords, {
       cpiAdjusted: deferredFilter.cpiAdjusted,
@@ -139,6 +144,8 @@ function DashboardContent() {
 
   const showFilterBar = activeTab !== "arbitrage"
   const showKpiSummary = activeTab === "curves" || activeTab === "schools"
+  const filteredCount =
+    activeTab === "table" ? tableRecords.length : analytics.filteredCount
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background font-sans text-foreground">
@@ -149,7 +156,7 @@ function DashboardContent() {
           filter={filter}
           onChange={setFilter}
           totalCount={records.length}
-          filteredCount={analytics.filteredCount}
+          filteredCount={filteredCount}
           roleFamilies={roleFamilies}
         />
       )}
@@ -224,7 +231,7 @@ function DashboardContent() {
 
             {activeTab === "table" && (
               <RecordsTable
-                records={analytics.filteredRecords}
+                records={tableRecords}
                 totalCount={records.length}
                 filter={filter}
                 tableParams={tableParams}
